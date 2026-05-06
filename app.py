@@ -110,7 +110,16 @@ faltantes_lista, total_starters, en_pista_count = obtener_estado_monitor(ID_EVEN
 
 # Calculamos los que REALMENTE están activos (Total - los que ya quedaron fuera)
 # Para un Backyard, los 'Activos' son los que salieron a esta vuelta
-total_activos = len(faltantes_lista) + (total_starters - en_pista_count) # Lógica simplificada
+# Buscamos los que terminaron la vuelta anterior (ej: patio - 1)
+vuelta_previa = patio - 1 if patio > 1 else 1
+res_activos = supabase.table("vueltas_vivo") \
+    .select("dorsal") \
+    .eq("id_evento", ID_EVENTO) \
+    .eq("nro_vuelta", vuelta_previa) \
+    .eq("estado", "ACT") \
+    .execute()
+total_activos = len(res_activos.data) if patio > 1 else 20 # Si es la vuelta 1, son los 20 starters
+#total_activos = len(faltantes_lista) + (total_starters - en_pista_count) # Lógica simplificada
 
 # SECCIÓN A: MÉTRICAS DE TIEMPO
 c1, c2, c3 = st.columns(3)
@@ -185,7 +194,7 @@ with st.container(border=True):
     
     c_pista, c_total = st.columns(2)
     c_pista.metric("Atletas en Pista", en_pista_count)
-    c_total.metric("Total en el Patio", total_activos)
+    c_total.metric("Total Activos", total_activos)
     
     if faltantes_lista:
         for f in faltantes_lista:
