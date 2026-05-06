@@ -121,7 +121,7 @@ with c2:
     st.metric("Tiempo para Campana", crono, delta_color=st_color)
 with c3:
     faltantes_lista, total, en_pista = obtener_estado_monitor(ID_EVENTO, patio)
-    sst.metric("En Circuito", f"{en_pista_count} / {total_activos}")
+    st.metric("En Circuito", f"{en_pista_count} / {total_activos}")
 
 
 with st.container(border=True):
