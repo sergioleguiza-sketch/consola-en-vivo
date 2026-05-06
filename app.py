@@ -98,7 +98,7 @@ if eventos_lista:
 
     # --- INTERFAZ DE CONSOLA ---
     st.title(f"⏱️ Panel de Control: {evento['nombre']}")
-    st.subheader(f"📍 {evento['lugar']} | {alerta_msg}")
+    st.subheader(f"📍 {evento['lugar']}  |  {alerta_msg}")
 else:
     st.error("No hay eventos 'en_vivo' para controlar.")
     st.stop()
@@ -114,7 +114,7 @@ total_activos = len(faltantes_lista) + (total_starters - en_pista_count) # Lógi
 # SECCIÓN A: MÉTRICAS DE TIEMPO
 c1, c2, c3 = st.columns(3)
 with c1:
-    st.metric("Patio Actual", patio)
+    st.metric("Vuelta Actual", patio)
 with c2:
     # Color inverso (rojo) si faltan menos de 3 minutos para la campana
     st_color = "inverse" if seg_restantes <= 180 else "normal"
