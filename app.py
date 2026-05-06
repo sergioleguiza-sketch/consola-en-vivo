@@ -4,7 +4,7 @@ from datetime import datetime, timezone, timedelta
 from supabase import create_client
 
 # 1. Configuración de Conexión y Página
-st.set_page_config(layout="wide", page_title="Cronoer - Consola de Control")
+st.set_page_config(layout="wide", page_title="BACKYARD ULTRA.ar EN VIVO - Consola de Control")
 url = st.secrets["SUPABASE_URL"]
 key = st.secrets["SUPABASE_KEY"]
 supabase = create_client(url, key)
