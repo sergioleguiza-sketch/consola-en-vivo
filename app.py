@@ -115,7 +115,28 @@ with c3:
     faltantes_lista, total, en_pista = obtener_estado_monitor(ID_EVENTO, patio)
     st.metric("En Circuito", f"{en_pista} / {total}")
 
+# SECCIÓN B: MONITOR DE SEGURIDAD
+if en_pista > 0:
+    st.subheader("🚨 Atletas en Circuito (Faltan Arribar)")
+    for f in faltantes_lista:
+        st.warning(f)
 
+with st.container(border=True):
+    st.subheader("📲 Registro de Arribos")
+    # Creamos dos columnas: una ancha para el scan y una angosta para el botón
+    # 'vertical_alignment' hace que el botón se alinee al centro del input
+    col_input, col_btn = st.columns([3, 1], vertical_alignment="bottom")
+    
+    with col_input:
+        dorsal_scan = st.text_input("Escanear Dorsal o Chip", key="scan_input", placeholder="Ej: 7")
+        
+    with col_btn:
+        if st.button("REGISTRAR ARRIBO", use_container_width=True, type="primary"):
+            if dorsal_scan:
+                # Aquí va tu lógica de registrar_paso(dorsal_scan, ID_EVENTO, patio)
+                st.toast(f"✅ Bib {dorsal_scan} registrado!")
+            else:
+                st.warning("Poné un dorsal")
 
 # --- BLOQUE 1: GESTIÓN DE SUCESOS (Tu código actual mejorado) ---
 with st.container(border=True):
