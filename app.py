@@ -126,21 +126,21 @@ with st.container(border=True):
         dorsal_scan = st.text_input("Escanear Dorsal o Chip", key="scan_input", placeholder="Ej: 7")
         
     with col_btn:
-    if st.button("REGISTRAR ARRIBO", use_container_width=True, type="primary"):
-        if dorsal_scan:
-            # 1. Llamamos a TU función tal cual la tenés definida
-            # Usamos el estado por defecto "ACT" (porque es un arribo normal)
-            resultado = registrar_suceso(ID_EVENTO, int(dorsal_scan), patio)
-            
-            # 2. Lógica de feedback basada en el prefijo que devuelve tu función
-            if "✅" in resultado:
-                st.toast(resultado) # Notificación rápida arriba a la derecha
-                st.rerun()          # Refrescamos para que desaparezca de "En Pista"
+        if st.button("REGISTRAR ARRIBO", use_container_width=True, type="primary"):
+            if dorsal_scan:
+                # 1. Llamamos a TU función tal cual la tenés definida
+                # Usamos el estado por defecto "ACT" (porque es un arribo normal)
+                resultado = registrar_suceso(ID_EVENTO, int(dorsal_scan), patio)
+                
+                # 2. Lógica de feedback basada en el prefijo que devuelve tu función
+                if "✅" in resultado:
+                    st.toast(resultado) # Notificación rápida arriba a la derecha
+                    st.rerun()          # Refrescamos para que desaparezca de "En Pista"
+                else:
+                    # Si hubo error (el ⚠️ que devuelve tu except), lo mostramos en rojo
+                    st.error(resultado)
             else:
-                # Si hubo error (el ⚠️ que devuelve tu except), lo mostramos en rojo
-                st.error(resultado)
-        else:
-            st.warning("⚠️ Escanée un dorsal primero")
+                st.warning("⚠️ Escanée un dorsal primero")
 
 # --- BLOQUE 1: GESTIÓN DE SUCESOS (Tu código actual mejorado) ---
 with st.container(border=True):
