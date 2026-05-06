@@ -102,6 +102,14 @@ if eventos_lista:
 else:
     st.error("No hay eventos 'en_vivo' para controlar.")
     st.stop()
+    
+# --- 1. CÁLCULO UNIFICADO ---
+# Llamamos a la función UNA SOLA VEZ para toda la página
+faltantes_lista, total_starters, en_pista_count = obtener_estado_monitor(ID_EVENTO, patio)
+
+# Calculamos los que REALMENTE están activos (Total - los que ya quedaron fuera)
+# Para un Backyard, los 'Activos' son los que salieron a esta vuelta
+total_activos = len(faltantes_lista) + (total_starters - en_pista_count) # Lógica simplificada
 
 # SECCIÓN A: MÉTRICAS DE TIEMPO
 c1, c2, c3 = st.columns(3)
@@ -113,7 +121,7 @@ with c2:
     st.metric("Tiempo para Campana", crono, delta_color=st_color)
 with c3:
     faltantes_lista, total, en_pista = obtener_estado_monitor(ID_EVENTO, patio)
-    st.metric("En Circuito", f"{en_pista} / {total}")
+    sst.metric("En Circuito", f"{en_pista_count} / {total_activos}")
 
 
 with st.container(border=True):
@@ -172,14 +180,14 @@ with st.container(border=True):
     st.subheader("🏃‍♂️ Monitor de Seguridad (En Pista)")
     
     # Aquí usamos la función que arreglamos antes para ver quién falta
-    faltantes, total, en_pista = obtener_estado_monitor(ID_EVENTO, patio)
+    #faltantes, total, en_pista = obtener_estado_monitor(ID_EVENTO, patio)
     
-    c1, c2 = st.columns(2)
-    c1.metric("Atletas en Pista", en_pista, delta_color="inverse")
-    c2.metric("Total en el Patio", total)
+    c_pista, c_total = st.columns(2)
+    c_pista.metric("Atletas en Pista", en_pista_count)
+    c_total.metric("Total en el Patio", total_activos)
     
-    if faltantes:
-        for f in faltantes:
-            st.warning(f) # En amarillo para que resalten los que no llegaron
+    if faltantes_lista:
+        for f in faltantes_lista:
+            st.warning(f)
     else:
-        st.success("✅ ¡Patio Completo! Todos los atletas en base.")
+        st.success("✅ ¡Patio Completo!")
