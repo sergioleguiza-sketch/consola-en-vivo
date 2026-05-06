@@ -49,8 +49,11 @@ def registrar_suceso(id_evento, dorsal, nro_vuelta, estado="ACT"):
         return f"❌ Error: {e}"
 
 def obtener_estado_monitor(id_evento, nro_vuelta):
-    # Traemos inscripciones y arribos para cruzar datos
-    ins = supabase.table("inscripciones").select("dorsal, atletas(nombre, apellido, asistente)").eq("id_evento", id_evento).execute()
+    # 1. Traemos inscripciones: asistente está aquí, y anidamos atletas para el nombre
+    query = "dorsal, asistente, atletas:dni_atleta(nombre, apellido)"
+    ins = supabase.table("inscripciones").select(query).eq("id_evento", id_evento).execute()
+    
+    # 2. Traemos arribos y DNF del patio actual
     arr = supabase.table("vueltas_vivo").select("dorsal").eq("id_evento", id_evento).eq("nro_vuelta", nro_vuelta).execute()
     fuera = supabase.table("vueltas_vivo").select("dorsal").eq("id_evento", id_evento).neq("estado", "ACT").execute()
     
@@ -58,12 +61,17 @@ def obtener_estado_monitor(id_evento, nro_vuelta):
     dorsales_fuera = {f['dorsal'] for f in fuera.data}
     
     faltantes = []
+    total_inscriptos = len(ins.data)
+    
     for i in ins.data:
         d = i['dorsal']
+        # Si no llegó y no está fuera, es un faltante
         if d not in dorsales_arribados and d not in dorsales_fuera:
-            faltantes.append(f"Dorsal {d} - {i['atletas']['nombre']} {i['atletas']['apellido']} (Asistente: {i['atletas']['asistente']})")
+            # Sacamos el nombre del atleta de la relación anidada
+            nombre_completo = f"{i['atletas']['nombre']} {i['atletas']['apellido']}"
+            asistente = i['asistente'] if i['asistente'] else "Sin asistente"
+            faltantes.append(f"Bib {d} - {nombre_completo} | Asistente: {asistente}")
     
-    total_inscriptos = len(ins.data)
     en_circuito = len(faltantes)
     return faltantes, total_inscriptos, en_circuito
 
