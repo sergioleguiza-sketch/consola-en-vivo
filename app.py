@@ -116,12 +116,15 @@ with c3:
     st.metric("En Circuito", f"{en_pista} / {total}")
 
 # SECCIÓN B: MONITOR DE SEGURIDAD
-if en_pista > 0:
+
+
+if faltantes:
     st.subheader("🚨 Atletas en Circuito (Faltan Arribar)")
-    for f in faltantes_lista:
-        st.warning(f)
+    for f in faltantes:
+            st.warning(f) # En amarillo para que resalten los que no llegaron
     else:
         st.success("✅ ¡Patio Completo! Todos los atletas en base.")
+
 
 with st.container(border=True):
     st.subheader("📲 Registro de Arribos")
