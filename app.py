@@ -120,6 +120,8 @@ if en_pista > 0:
     st.subheader("🚨 Atletas en Circuito (Faltan Arribar)")
     for f in faltantes_lista:
         st.warning(f)
+    else:
+        st.success("✅ ¡Patio Completo! Todos los atletas en base.")
 
 with st.container(border=True):
     st.subheader("📲 Registro de Arribos")
