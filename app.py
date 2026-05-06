@@ -121,17 +121,22 @@ if en_pista > 0:
     for f in faltantes_lista:
         st.warning(f)
 
-# SECCIÓN C: REGISTRO RÁPIDO (Scanner)
-st.divider()
-col_in, col_btn = st.columns([3, 1])
-with col_in:
-    entrada = st.text_input("LECTURA DE HARDWARE (Dorsal):", key="scanner", placeholder="Scan o tipeo...")
-with col_btn:
-    if st.button("Registrar Arribo", use_container_width=True):
-        if entrada:
-            res = registrar_suceso(ID_EVENTO, int(entrada), patio, "ACT")
-            st.toast(res)
-            st.rerun()
+with st.container(border=True):
+    st.subheader("📲 Registro de Arribos")
+    # Creamos dos columnas: una ancha para el scan y una angosta para el botón
+    # 'vertical_alignment' hace que el botón se alinee al centro del input
+    col_input, col_btn = st.columns([3, 1], vertical_alignment="bottom")
+    
+    with col_input:
+        dorsal_scan = st.text_input("Escanear Dorsal o Chip", key="scan_input", placeholder="Ej: 7")
+        
+    with col_btn:
+        if st.button("REGISTRAR ARRIBO", use_container_width=True, type="primary"):
+            if dorsal_scan:
+                # Aquí va tu lógica de registrar_paso(dorsal_scan, ID_EVENTO, patio)
+                st.toast(f"✅ Bib {dorsal_scan} registrado!")
+            else:
+                st.warning("Poné un dorsal")
 
 # SECCIÓN D: NOVEDADES MANUALES
 st.subheader("📝 Novedades del Director")
