@@ -67,20 +67,33 @@ def obtener_estado_monitor(id_evento, nro_vuelta):
     en_circuito = len(faltantes)
     return faltantes, total_inscriptos, en_circuito
 
-# 4. Carga de Evento Activo
-res_evento = supabase.table("eventos").select("*").eq("estado", "en_vivo").maybe_single().execute()
+# --- AJUSTE PARA MÚLTIPLES EVENTOS EN CONSOLA ---
 
-if not res_evento.data:
-    st.error("No hay evento 'en_vivo' en Supabase.")
+# 1. Traemos todos los eventos en vivo
+res_eventos = supabase.table("eventos").select("*").eq("estado", "en_vivo").execute()
+eventos_lista = res_eventos.data
+
+if eventos_lista:
+    # 2. Selector para el Director de Carrera
+    if len(eventos_lista) > 1:
+        nombres_eventos = [e['nombre'] for e in eventos_lista]
+        seleccion = st.sidebar.selectbox("🎮 Seleccioná Carrera a Controlar:", nombres_eventos)
+        evento = next(e for e in eventos_lista if e['nombre'] == seleccion)
+    else:
+        evento = eventos_lista[0]
+
+    # 3. Definimos las variables que el resto del código ya usa
+    ID_EVENTO = evento['id_evento']
+    
+    # 4. Cálculo de tiempo (Patio, crono, alertas)
+    patio, crono, seg_restantes, alerta_msg = calcular_seguimiento_carrera(evento['hora_cero'])
+
+    # --- INTERFAZ DE CONSOLA ---
+    st.title(f"⏱️ Panel de Control: {evento['nombre']}")
+    st.subheader(f"📍 {evento['lugar']} | {alerta_msg}")
+else:
+    st.error("No hay eventos 'en_vivo' para controlar.")
     st.stop()
-
-evento = res_evento.data
-ID_EVENTO = evento['id_evento']
-patio, crono, seg_restantes, alerta_msg = calcular_seguimiento_carrera(evento['hora_cero'])
-
-# --- INTERFAZ DE CONSOLA ---
-st.title(f"⏱️ Panel de Control: {evento['nombre']}")
-st.subheader(f"📍 {evento['lugar']} | {alerta_msg}")
 
 # SECCIÓN A: MÉTRICAS DE TIEMPO
 c1, c2, c3 = st.columns(3)
