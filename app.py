@@ -44,9 +44,9 @@ def registrar_suceso(id_evento, dorsal, nro_vuelta, estado="ACT"):
     }
     try:
         supabase.table("vueltas_vivo").insert(nuevo_registro).execute()
-        return f"✅ Dorsal {dorsal} -> {estado}"
+        return f"✅ Bib {dorsal} registrado en Patio {nro_vuelta}"
     except Exception as e:
-        return f"❌ Error: {e}"
+        return f"⚠️ Error: El dorsal {dorsal} no es válido o ya fue registrado."
 
 def obtener_estado_monitor(id_evento, nro_vuelta):
     # 1. Traemos inscripciones: asistente está aquí, y anidamos atletas para el nombre
@@ -126,12 +126,21 @@ with st.container(border=True):
         dorsal_scan = st.text_input("Escanear Dorsal o Chip", key="scan_input", placeholder="Ej: 7")
         
     with col_btn:
-        if st.button("REGISTRAR ARRIBO", use_container_width=True, type="primary"):
-            if dorsal_scan:
-                # Aquí va tu lógica de registrar_paso(dorsal_scan, ID_EVENTO, patio)
-                st.toast(f"✅ Bib {dorsal_scan} registrado!")
+    if st.button("REGISTRAR ARRIBO", use_container_width=True, type="primary"):
+        if dorsal_scan:
+            # 1. Llamamos a TU función tal cual la tenés definida
+            # Usamos el estado por defecto "ACT" (porque es un arribo normal)
+            resultado = registrar_suceso(ID_EVENTO, int(dorsal_scan), patio)
+            
+            # 2. Lógica de feedback basada en el prefijo que devuelve tu función
+            if "✅" in resultado:
+                st.toast(resultado) # Notificación rápida arriba a la derecha
+                st.rerun()          # Refrescamos para que desaparezca de "En Pista"
             else:
-                st.warning("Poné un dorsal")
+                # Si hubo error (el ⚠️ que devuelve tu except), lo mostramos en rojo
+                st.error(resultado)
+        else:
+            st.warning("⚠️ Escanée un dorsal primero")
 
 # --- BLOQUE 1: GESTIÓN DE SUCESOS (Tu código actual mejorado) ---
 with st.container(border=True):
