@@ -138,24 +138,44 @@ with st.container(border=True):
             else:
                 st.warning("Poné un dorsal")
 
-# SECCIÓN D: NOVEDADES MANUALES
-st.subheader("📝 Novedades del Director")
-ins_data = supabase.table("inscripciones").select("dorsal, atletas(nombre, apellido)").eq("id_evento", ID_EVENTO).execute()
-opciones = [f"{c['dorsal']} - {c['atletas']['nombre']} {c['atletas']['apellido']}" for c in ins_data.data]
-selec = st.selectbox("Seleccionar Atleta:", opciones)
-dorsal_id = int(selec.split(" - ")[0])
+# --- BLOQUE 1: GESTIÓN DE SUCESOS (Tu código actual mejorado) ---
+with st.container(border=True):
+    st.subheader("📝 Gestión de Sucesos (Manual)")
+    
+    # Mantenemos tu lógica de carga de atletas
+    ins_data = supabase.table("inscripciones").select("dorsal, atletas(nombre, apellido)").eq("id_evento", ID_EVENTO).execute()
+    opciones = [f"{c['dorsal']} - {c['atletas']['nombre']} {c['atletas']['apellido']}" for c in ins_data.data]
+    selec = st.selectbox("Seleccionar Atleta para novedad:", opciones)
+    dorsal_id = int(selec.split(" - ")[0])
 
-btn1, btn2, btn3, btn4 = st.columns(4)
-with btn1:
-    if st.button("❌ RTC", help="Retire To Camp", use_container_width=True):
-        st.toast(registrar_suceso(ID_EVENTO, dorsal_id, patio, "DNF (RTC)"))
-with btn2:
-    if st.button("⚠️ INC", help="Incomplete Lap", use_container_width=True):
-        st.toast(registrar_suceso(ID_EVENTO, dorsal_id, patio, "DNF (INC)"))
-with btn3:
-    if st.button("🚫 DQ", help="Disqualified", use_container_width=True):
-        st.toast(registrar_suceso(ID_EVENTO, dorsal_id, patio, "DNF (DQ)"))
-with btn4:
-    if st.button("🏆 WINNER", type="primary", use_container_width=True):
-        st.balloons()
-        st.success(registrar_suceso(ID_EVENTO, dorsal_id, patio, "WINNER"))
+    btn1, btn2, btn3, btn4 = st.columns(4)
+    with btn1:
+        if st.button("❌ RTC", help="Retire To Camp", use_container_width=True):
+            st.toast(registrar_suceso(ID_EVENTO, dorsal_id, patio, "DNF (RTC)"))
+    with btn2:
+        if st.button("⚠️ INC", help="Incomplete Lap", use_container_width=True):
+            st.toast(registrar_suceso(ID_EVENTO, dorsal_id, patio, "DNF (INC)"))
+    with btn3:
+        if st.button("🚫 DQ", help="Disqualified", use_container_width=True):
+            st.toast(registrar_suceso(ID_EVENTO, dorsal_id, patio, "DNF (DQ)"))
+    with btn4:
+        if st.button("🏆 WINNER", type="primary", use_container_width=True):
+            st.balloons()
+            st.success(registrar_suceso(ID_EVENTO, dorsal_id, patio, "WINNER"))
+
+# --- BLOQUE 2: MONITOR DE SEGURIDAD (Lo que falta llegar) ---
+with st.container(border=True):
+    st.subheader("🏃‍♂️ Monitor de Seguridad (En Pista)")
+    
+    # Aquí usamos la función que arreglamos antes para ver quién falta
+    faltantes, total, en_pista = obtener_estado_monitor(ID_EVENTO, patio)
+    
+    c1, c2 = st.columns(2)
+    c1.metric("Atletas en Pista", en_pista, delta_color="inverse")
+    c2.metric("Total en el Patio", total)
+    
+    if faltantes:
+        for f in faltantes:
+            st.warning(f) # En amarillo para que resalten los que no llegaron
+    else:
+        st.success("✅ ¡Patio Completo! Todos los atletas en base.")
