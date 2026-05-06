@@ -118,9 +118,9 @@ with c3:
 # SECCIÓN B: MONITOR DE SEGURIDAD
 
 
-if faltantes:
+if faltantes_lista:
     st.subheader("🚨 Atletas en Circuito (Faltan Arribar)")
-    for f in faltantes:
+    for f in faltantes_lista:
             st.warning(f) # En amarillo para que resalten los que no llegaron
     else:
         st.success("✅ ¡Patio Completo! Todos los atletas en base.")
