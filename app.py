@@ -3,6 +3,19 @@ import pandas as pd
 from datetime import datetime, timezone, timedelta
 from supabase import create_client
 
+# Inyectamos el CSS para cambiar el color de los bordes de los contenedores
+st.markdown(
+    """
+    <style>
+    [data-testid="stVerticalBlockBorderWrapper"] {
+        border: 2px solid #0000FF !important;
+        border-radius: 0.5rem;
+    }
+    </style>
+    """,
+    unsafe_allow_html=True
+)
+
 # 1. Configuración de Conexión y Página
 st.set_page_config(layout="wide", page_title="BACKYARD ULTRA.ar EN VIVO - Consola de Control")
 url = st.secrets["SUPABASE_URL"]
