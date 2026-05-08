@@ -165,7 +165,7 @@ with c3:
     st.metric("Tiempo para Campana", crono, delta_color=st_color)
 with c4:
     # Mantenemos tu lógica de "En Pista / Activos"
-    st.metric("En Pista / Activos", f"{en_pista_count} / {total_activos}")
+    st.metric("En Circuito / Activos", f"{en_pista_count} / {total_activos}")
 
 
 with st.container(border=True):
