@@ -126,30 +126,33 @@ faltantes_lista, total_starters, en_pista_count = obtener_estado_monitor(ID_EVEN
 # Buscamos los que terminaron la vuelta anterior (ej: patio - 1)
 # Cálculo de Activos Reales para el Director:
 # Lógica mejorada para Activos
-if patio <= 1:
-    # En la primera vuelta, todos los que largaron son los activos
-    total_activos = total_starters 
-else:
-    # Para vueltas posteriores, contamos quiénes terminaron el patio anterior
-    vuelta_anterior = patio - 1
-    try:
-        res_activos = supabase.table("vueltas_vivo") \
-            .select("dorsal", count="exact") \
-            .eq("id_evento", ID_EVENTO) \
-            .eq("nro_vuelta", vuelta_anterior) \
-            .eq("estado", "ACT") \
-            .execute()
+# En un Backyard, los Activos son: Todos los que empezaron (Starters) 
+# MENOS los que ya quedaron fuera (DNF, DQ, etc.) en cualquier momento de la carrera.
+res_eliminados = supabase.table("vueltas_vivo") \
+    .select("dorsal", count="exact") \
+    .eq("id_evento", ID_EVENTO) \
+    .neq("estado", "ACT") \
+    .execute()
+
+total_fuera = res_eliminados.count if res_eliminados.count is not None else 0
+total_activos = total_starters - total_fuera
+
+# Y para la métrica "En Circuito":
+# Son los Activos que todavía no cruzaron la meta en ESTE patio.
+llegaron_ya = supabase.table("vueltas_vivo") \
+    .select("dorsal", count="exact") \
+    .eq("id_evento", ID_EVENTO) \
+    .eq("nro_vuelta", patio) \
+    .eq("estado", "ACT") \
+    .execute()
         
-        # Si la consulta devuelve datos, usamos ese conteo
-        total_activos = res_activos.count if res_activos.count is not None else total_starters
-    except:
-        # Si algo falla en la consulta, mostramos el total de inscriptos para no ver un 0
-        total_activos = total_starters
 # 1. Contar cuántos tienen el estado 'ACT'
 # Usamos el conteo exacto de la base de datos
 #total_activos = res_activos.count if res_activos.count else 0
 # Forzamos que si total_activos quedó en 0 por alguna razón, sea al menos el nro de starters
 if total_activos == 0: total_activos = total_starters
+ya_en_base = llegaron_ya.count if llegaron_ya.count is not None else 0
+en_pista_real = total_activos - ya_en_base
 
 # SECCIÓN A: MÉTRICAS DE TIEMPO
 c1, c2, c3 = st.columns(3)
