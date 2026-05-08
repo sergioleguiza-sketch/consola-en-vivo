@@ -154,16 +154,17 @@ if total_activos == 0: total_activos = total_starters
 ya_en_base = llegaron_ya.count if llegaron_ya.count is not None else 0
 en_pista_real = total_activos - ya_en_base
 
-# SECCIÓN A: MÉTRICAS DE TIEMPO
-c1, c2, c3 = st.columns(3)
+# SECCIÓN A: MÉTRICAS PRINCIPALES
+c1, c2, c3, c4 = st.columns(4) # Cambiamos a 4 columnas
 with c1:
-    st.metric("Vuelta Actual", patio)
+    st.metric("Starters", total_starters) # Mostramos el total inicial
 with c2:
-    # Color inverso (rojo) si faltan menos de 3 minutos para la campana
+    st.metric("Vuelta Actual", patio)
+with c3:
     st_color = "inverse" if seg_restantes <= 180 else "normal"
     st.metric("Tiempo para Campana", crono, delta_color=st_color)
-with c3:
-    faltantes_lista, total, en_pista = obtener_estado_monitor(ID_EVENTO, patio)
+with c4:
+    # Mantenemos tu lógica de "En Pista / Activos"
     st.metric("En Circuito", f"{en_pista_count} / {total_activos}")
 
 
@@ -207,16 +208,20 @@ with st.container(border=True):
     with btn1:
         if st.button("❌ RTC", help="Retire To Camp", use_container_width=True):
             st.toast(registrar_suceso(ID_EVENTO, dorsal_id, patio, "DNF (RTC)"))
+            st.rerun()
     with btn2:
         if st.button("⚠️ INC", help="Incomplete Lap", use_container_width=True):
             st.toast(registrar_suceso(ID_EVENTO, dorsal_id, patio, "DNF (INC)"))
+            st.rerun()
     with btn3:
         if st.button("🚫 DQ", help="Disqualified", use_container_width=True):
             st.toast(registrar_suceso(ID_EVENTO, dorsal_id, patio, "DNF (DQ)"))
+            st.rerun()
     with btn4:
         if st.button("🏆 WINNER", type="primary", use_container_width=True):
             st.balloons()
             st.success(registrar_suceso(ID_EVENTO, dorsal_id, patio, "WINNER"))
+            st.rerun()
 
 # --- BLOQUE 2: MONITOR DE SEGURIDAD (Lo que falta llegar) ---
 with st.container(border=True):
