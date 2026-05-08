@@ -7,9 +7,17 @@ from supabase import create_client
 st.markdown(
     """
     <style>
+    /* Aplicamos fondo a los contenedores con borde */
     [data-testid="stVerticalBlockBorderWrapper"] {
-        border: 2px solid #0000FF !important;
-        border-radius: 0.5rem;
+        background-color: #f0f2f6; /* Gris muy claro de base */
+        padding: 20px;
+        border-radius: 10px;
+        border: none !important;
+    }
+    
+    /* Si querés un color específico para la zona de Registro (azul clarito) */
+    .stColumn > div > div > div[data-testid="stVerticalBlockBorderWrapper"] {
+        border-left: 5px solid #0000FF !important; /* Una barrita azul al costado queda muy Pro */
     }
     </style>
     """,
