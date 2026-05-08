@@ -131,7 +131,9 @@ res_activos = supabase.table("vueltas_vivo") \
     .eq("nro_vuelta", vuelta_previa) \
     .eq("estado", "ACT") \
     .execute()
-total_activos = len(res_activos.data) if patio > 1 else 20 # Si es la vuelta 1, son los 20 starters
+# 1. Contar cuántos tienen el estado 'ACT'
+total_activos = int(ranking[ranking['estado'] == 'ACT'].shape[0])
+#total_activos = len(res_activos.data) if patio > 1 else 20 # Si es la vuelta 1, son los 20 starters
 #total_activos = len(faltantes_lista) + (total_starters - en_pista_count) # Lógica simplificada
 
 # SECCIÓN A: MÉTRICAS DE TIEMPO
