@@ -125,21 +125,29 @@ faltantes_lista, total_starters, en_pista_count = obtener_estado_monitor(ID_EVEN
 # Para un Backyard, los 'Activos' son los que salieron a esta vuelta
 # Buscamos los que terminaron la vuelta anterior (ej: patio - 1)
 # Cálculo de Activos Reales para el Director:
-if patio == 1:
-    # Si es la vuelta 1, los activos son todos los que largaron (total inscriptos)
+# Lógica mejorada para Activos
+if patio <= 1:
+    # En la primera vuelta, todos los que largaron son los activos
     total_activos = total_starters 
 else:
-    # Si es vuelta > 1, los activos son los que completaron la vuelta anterior con "ACT"
+    # Para vueltas posteriores, contamos quiénes terminaron el patio anterior
     vuelta_anterior = patio - 1
-    res_activos = supabase.table("vueltas_vivo") \
-        .select("dorsal", count="exact") \
-        .eq("id_evento", ID_EVENTO) \
-        .eq("nro_vuelta", vuelta_anterior) \
-        .eq("estado", "ACT") \
-        .execute()
+    try:
+        res_activos = supabase.table("vueltas_vivo") \
+            .select("dorsal", count="exact") \
+            .eq("id_evento", ID_EVENTO) \
+            .eq("nro_vuelta", vuelta_anterior) \
+            .eq("estado", "ACT") \
+            .execute()
+        
+        # Si la consulta devuelve datos, usamos ese conteo
+        total_activos = res_activos.count if res_activos.count is not None else total_starters
+    except:
+        # Si algo falla en la consulta, mostramos el total de inscriptos para no ver un 0
+        total_activos = total_starters
 # 1. Contar cuántos tienen el estado 'ACT'
 # Usamos el conteo exacto de la base de datos
-    total_activos = res_activos.count if res_activos.count else 0
+total_activos = res_activos.count if res_activos.count else 0
 
 # SECCIÓN A: MÉTRICAS DE TIEMPO
 c1, c2, c3 = st.columns(3)
