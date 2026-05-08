@@ -120,7 +120,7 @@ if eventos_lista:
     # --- INTERFAZ DE CONSOLA ---
     st.title(f"⏱️ Panel de Control: {evento['nombre']}")
     st.markdown(f"### 📍 {evento['lugar']} <span style='margin: 0 15px;'>|</span> {alerta_msg}", unsafe_allow_html=True)
-    #st.subheader(f"📍 {evento['lugar']}  |  {alerta_msg}")
+    
 else:
     st.error("No hay eventos 'en_vivo' para controlar.")
     st.stop()
