@@ -147,7 +147,9 @@ else:
         total_activos = total_starters
 # 1. Contar cuántos tienen el estado 'ACT'
 # Usamos el conteo exacto de la base de datos
-total_activos = res_activos.count if res_activos.count else 0
+#total_activos = res_activos.count if res_activos.count else 0
+# Forzamos que si total_activos quedó en 0 por alguna razón, sea al menos el nro de starters
+if total_activos == 0: total_activos = total_starters
 
 # SECCIÓN A: MÉTRICAS DE TIEMPO
 c1, c2, c3 = st.columns(3)
