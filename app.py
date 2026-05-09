@@ -98,18 +98,49 @@ def calcular_seguimiento_carrera(hora_cero_db):
     
     return patio_actual, tiempo_fmt, segundos_restantes, alerta
 
-# 3. Funciones de Base de Datos
-def registrar_suceso(id_evento, dorsal, nro_vuelta, estado="ACT"):
-    ahora = datetime.now(timezone.utc).isoformat()
+def registrar_suceso_inteligente(id_evento, dorsal, patio_actual_sistema, hora_cero_db, estado_manual=None):
+    """
+    Sustituye a registrar_suceso. Determina automáticamente si es ACT o OVR
+    basado en el tiempo, a menos que se fuerce un estado (como RTC o DQ).
+    """
+    ahora = datetime.now(timezone.utc)
+    inicio_carrera = datetime.fromisoformat(hora_cero_db)
+    
+    # Calculamos segundos totales desde la largada
+    segundos_desde_inicio = (ahora - inicio_carrera).total_seconds()
+    
+    # El segundo exacto dentro del bloque de 3600 segundos (1 hora)
+    segundo_del_patio = segundos_desde_inicio % 3600
+    
+    # LÓGICA DE ESTADO AUTOMÁTICO
+    if estado_manual:
+        # Si venimos de un botón específico (RTC, DQ, WINNER), usamos ese
+        estado = estado_manual
+        nro_vuelta = patio_actual_sistema
+    else:
+        # Si es un escaneo normal de llegada a meta:
+        # Si llega en los primeros 30 segundos de la nueva hora, es OVR del patio anterior
+        if 0 < segundo_del_patio <= 30:
+            estado = "DNF (OVR)"
+            nro_vuelta = patio_actual_sistema - 1
+        else:
+            estado = "ACT"
+            nro_vuelta = patio_actual_sistema
+
     nuevo_registro = {
-        "id_evento": id_evento, "dorsal": dorsal, 
-        "nro_vuelta": nro_vuelta, "hora_llegada": ahora, "estado": estado
+        "id_evento": id_evento, 
+        "dorsal": dorsal, 
+        "nro_vuelta": nro_vuelta, 
+        "hora_llegada": ahora.isoformat(), 
+        "estado": estado
     }
+    
     try:
         supabase.table("vueltas_vivo").insert(nuevo_registro).execute()
-        return f"✅ Bib {dorsal} registrado en Patio {nro_vuelta}"
+        emoji = "✅" if estado == "ACT" else "⚠️"
+        return f"{emoji} Bib {dorsal}: {estado} en Patio {nro_vuelta}"
     except Exception as e:
-        return f"⚠️ Error: El dorsal {dorsal} no es válido o ya fue registrado."
+        return f"❌ Error: El dorsal {dorsal} ya tiene registro en el Patio {nro_vuelta}."
 
 def obtener_estado_monitor(id_evento, nro_vuelta):
     # 1. Traemos inscripciones: asistente está aquí, y anidamos atletas para el nombre
