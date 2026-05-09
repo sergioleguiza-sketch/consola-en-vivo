@@ -38,6 +38,40 @@ def finalizar_evento(id_evento):
     except Exception as e:
         return False
 
+def obtener_clasificacion_final(id_evento):
+    # 1. Traemos todos los registros de vueltas de este evento
+    query = "dorsal, nro_vuelta, hora_llegada, estado, atletas:dni_atleta(nombre, apellido)"
+    res = supabase.table("vueltas_vivo").select(query).eq("id_evento", id_evento).execute()
+    
+    if not res.data:
+        return None
+
+    df = pd.DataFrame(res.data)
+    
+    # Expandimos los datos del atleta
+    df['atleta'] = df['atletas'].apply(lambda x: f"{x['nombre']} {x['apellido']}")
+    
+    # 2. Agrupamos para obtener: Máximo de vueltas y Estado final
+    # (El estado final será WINNER o DNF)
+    clasif = df.groupby('dorsal').agg({
+        'nro_vuelta': 'max',
+        'atleta': 'first',
+        'estado': 'last', # El último estado registrado
+        'hora_llegada': 'max' # Referencia de tiempo
+    }).reset_index()
+
+    # 3. Lógica de ordenamiento Backyard:
+    # Primero el WINNER, luego por número de vueltas (descendente)
+    # A igual vueltas, el que llegó antes (hora_llegada ascendente)
+    clasif['es_winner'] = clasif['estado'] == 'WINNER'
+    
+    clasif = clasif.sort_values(
+        by=['es_winner', 'nro_vuelta', 'hora_llegada'], 
+        ascending=[False, False, True]
+    )
+
+    return clasif[['dorsal', 'atleta', 'nro_vuelta', 'estado']]
+
 # 2. Funciones de Lógica de Tiempo (Estricto Backyard)
 def calcular_seguimiento_carrera(hora_cero_db):
     inicio_carrera = datetime.fromisoformat(hora_cero_db)
@@ -250,6 +284,24 @@ with st.container(border=True):
                     import time
                     time.sleep(2)
                     st.rerun()
+                    # Si el evento ya terminó, mostramos opción de descargar clasificación
+                    if evento['estado'] == 'finalizado':
+                        st.success("🏁 Este evento ha finalizado.")
+                        
+                        df_final = obtener_clasificacion_final(ID_EVENTO)
+                        
+                        if df_final is not None:
+                            st.subheader("📊 Clasificación Final")
+                            st.dataframe(df_final, use_container_width=True)
+                            
+                            # Botón para descargar CSV (formato ideal para la Bitácora o enviar afuera)
+                            csv = df_final.to_csv(index=False).encode('utf-8')
+                            st.download_button(
+                                label="Descargar Clasificación (CSV)",
+                                data=csv,
+                                file_name=f"clasificacion_{evento['nombre']}_{datetime.now().strftime('%Y%m%d')}.csv",
+                                mime='text/csv',
+                            )
                 else:
                     st.error("Error al actualizar el estado del evento en la base de datos.")
 
