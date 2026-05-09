@@ -263,7 +263,7 @@ with st.container(border=True):
             if dorsal_scan:
                 # 1. Llamamos a TU función tal cual la tenés definida
                 # Usamos el estado por defecto "ACT" (porque es un arribo normal)
-                resultado = registrar_suceso(ID_EVENTO, int(dorsal_scan), patio)
+                resultado = registrar_suceso_inteligente(ID_EVENTO, int(dorsal_scan), patio)
                 
                 # 2. Lógica de feedback basada en el prefijo que devuelve tu función
                 if "✅" in resultado:
