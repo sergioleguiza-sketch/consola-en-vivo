@@ -300,11 +300,11 @@ with st.container(border=True):
             st.rerun()
     with b2:
         # RTC: El clásico "No salgo más" del Backyard
-        if st.button("❌ RTC", help="Retire To Camp (Abandono)", use_container_width=True):
+        if st.button("❌ RTC", help="Refuse To Continue (Abandono)", use_container_width=True):
             st.toast(registrar_suceso_inteligente(ID_EVENTO, dorsal_id, patio, evento['hora_cero'], "DNF (RTC)"))
             st.rerun()
     with b3:
-        if st.button("⚠️ INC", help="Incomplete Lap", use_container_width=True):
+        if st.button("⚠️ INC", help="Incomplete Loop", use_container_width=True):
             st.toast(registrar_suceso_inteligente(ID_EVENTO, dorsal_id, patio, evento['hora_cero'], "DNF (INC)"))
             st.rerun()
     # Fila 2: Acciones Especiales
