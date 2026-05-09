@@ -307,7 +307,7 @@ with st.container(border=True):
         if st.button("🚫 DQ", help="Disqualified", use_container_width=True):
             st.toast(registrar_suceso_inteligente(ID_EVENTO, dorsal_id, patio, evento['hora_cero'], "DNF (DQ)"))
             st.rerun()
-    with btn5:
+    with b5:
         # Usamos un popover para que el botón de confirmación aparezca al hacer clic
         with st.popover("🏆 WINNER", use_container_width=True, help="Declarar ganador y finalizar evento"):
             st.warning("¿Estás seguro? Esto cerrará el evento y cambiará su estado a FINALIZADO.")
