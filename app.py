@@ -240,7 +240,7 @@ c1, c2, c3, c4 = st.columns(4) # Cambiamos a 4 columnas
 with c1:
     st.metric("Starters", total_starters) # Mostramos el total inicial
 with c2:
-    st.metric("Vuelta Actual", patio)
+    st.metric("Vuelta Actual", patio_actual)
 with c3:
     st_color = "inverse" if seg_restantes <= 180 else "normal"
     st.metric("Tiempo para Campana", crono, delta_color=st_color)
