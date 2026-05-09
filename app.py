@@ -30,6 +30,14 @@ url = st.secrets["SUPABASE_URL"]
 key = st.secrets["SUPABASE_KEY"]
 supabase = create_client(url, key)
 
+def finalizar_evento(id_evento):
+    try:
+        # Cambiamos el estado en la tabla 'eventos'
+        supabase.table("eventos").update({"estado": "finalizado"}).eq("id_evento", id_evento).execute()
+        return True
+    except Exception as e:
+        return False
+
 # 2. Funciones de Lógica de Tiempo (Estricto Backyard)
 def calcular_seguimiento_carrera(hora_cero_db):
     inicio_carrera = datetime.fromisoformat(hora_cero_db)
@@ -226,10 +234,24 @@ with st.container(border=True):
             st.toast(registrar_suceso(ID_EVENTO, dorsal_id, patio, "DNF (DQ)"))
             st.rerun()
     with btn4:
-        if st.button("🏆 WINNER", type="primary", use_container_width=True):
-            st.balloons()
-            st.success(registrar_suceso(ID_EVENTO, dorsal_id, patio, "WINNER"))
-            st.rerun()
+        # Usamos un popover para que el botón de confirmación aparezca al hacer clic
+        with st.popover("🏆 WINNER", use_container_width=True, help="Declarar ganador y finalizar evento"):
+            st.warning("¿Estás seguro? Esto cerrará el evento y cambiará su estado a FINALIZADO.")
+            
+            if st.button("SÍ, FINALIZAR CARRERA", type="primary", use_container_width=True):
+                # 1. Registramos al ganador
+                res_suceso = registrar_suceso(ID_EVENTO, dorsal_id, patio, "WINNER")
+                
+                # 2. Intentamos cerrar el evento
+                if finalizar_evento(ID_EVENTO):
+                    st.balloons()
+                    st.success(f"¡Evento finalizado con éxito!")
+                    # Pequeña pausa para que se vea el mensaje antes del rerun
+                    import time
+                    time.sleep(2)
+                    st.rerun()
+                else:
+                    st.error("Error al actualizar el estado del evento en la base de datos.")
 
 # --- BLOQUE 2: MONITOR DE SEGURIDAD (Lo que falta llegar) ---
 with st.container(border=True):
