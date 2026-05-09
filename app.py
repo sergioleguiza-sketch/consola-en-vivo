@@ -120,7 +120,7 @@ def registrar_suceso_inteligente(id_evento, dorsal, patio_actual_sistema, hora_c
     else:
         # Si es un escaneo normal de llegada a meta:
         # Si llega en los primeros 30 segundos de la nueva hora, es OVR del patio anterior
-        if 0 < segundo_del_patio <= 30:
+        if 0 < segundo_del_patio <= 300:
             estado = "DNF (OVR)"
             nro_vuelta = patio_actual_sistema - 1
         else:
