@@ -285,27 +285,36 @@ with st.container(border=True):
     selec = st.selectbox("Seleccionar Atleta para novedad:", opciones)
     dorsal_id = int(selec.split(" - ")[0])
 
-    btn1, btn2, btn3, btn4 = st.columns(4)
-    with btn1:
-        if st.button("❌ RTC", help="Retire To Camp", use_container_width=True):
-            st.toast(registrar_suceso(ID_EVENTO, dorsal_id, patio, "DNF (RTC)"))
+    # Fila 1: Abandonos y Faltas
+    b1, b2, b3 = st.columns(3)
+    with b1:
+        # DNS: Solo para el Patio 1 (No vino al evento)
+        if st.button("🚫 DNS", help="Did Not Start (No vino)", use_container_width=True):
+            st.toast(registrar_suceso_inteligente(ID_EVENTO, dorsal_id, 1, evento['hora_cero'], "DNF (DNS)"))
             st.rerun()
-    with btn2:
+    with b2:
+        # RTC: El clásico "No salgo más" del Backyard
+        if st.button("❌ RTC", help="Retire To Camp (Abandono)", use_container_width=True):
+            st.toast(registrar_suceso_inteligente(ID_EVENTO, dorsal_id, patio, evento['hora_cero'], "DNF (RTC)"))
+            st.rerun()
+    with b3:
         if st.button("⚠️ INC", help="Incomplete Lap", use_container_width=True):
-            st.toast(registrar_suceso(ID_EVENTO, dorsal_id, patio, "DNF (INC)"))
+            st.toast(registrar_suceso_inteligente(ID_EVENTO, dorsal_id, patio, evento['hora_cero'], "DNF (INC)"))
             st.rerun()
-    with btn3:
+    # Fila 2: Acciones Especiales
+    b4, b5 = st.columns(2)
+    with b4:
         if st.button("🚫 DQ", help="Disqualified", use_container_width=True):
-            st.toast(registrar_suceso(ID_EVENTO, dorsal_id, patio, "DNF (DQ)"))
+            st.toast(registrar_suceso_inteligente(ID_EVENTO, dorsal_id, patio, evento['hora_cero'], "DNF (DQ)"))
             st.rerun()
-    with btn4:
+    with btn5:
         # Usamos un popover para que el botón de confirmación aparezca al hacer clic
         with st.popover("🏆 WINNER", use_container_width=True, help="Declarar ganador y finalizar evento"):
             st.warning("¿Estás seguro? Esto cerrará el evento y cambiará su estado a FINALIZADO.")
             
             if st.button("SÍ, FINALIZAR CARRERA", type="primary", use_container_width=True):
                 # 1. Registramos al ganador
-                res_suceso = registrar_suceso(ID_EVENTO, dorsal_id, patio, "WINNER")
+                registrar_suceso_inteligente(ID_EVENTO, dorsal_id, patio, evento['hora_cero'], "WINNER")
                 
                 # 2. Intentamos cerrar el evento
                 if finalizar_evento(ID_EVENTO):
