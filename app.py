@@ -347,13 +347,13 @@ with st.container(border=True):
 
 # --- BLOQUE 2: MONITOR DE SEGURIDAD (Lo que falta llegar) ---
 with st.container(border=True):
-    st.subheader("🏃‍♂️ Monitor de Seguridad (En Pista)")
+    st.subheader("🏃‍♂️ Monitor de Seguridad (En Circuito)")
     
     # Aquí usamos la función que arreglamos antes para ver quién falta
     #faltantes, total, en_pista = obtener_estado_monitor(ID_EVENTO, patio)
     
     c_pista, c_total = st.columns(2)
-    c_pista.metric("Atletas en Pista", en_pista_count)
+    c_pista.metric("Atletas en Circuito", en_pista_count)
     c_total.metric("Total Activos", total_activos)
     
     if faltantes_lista:
