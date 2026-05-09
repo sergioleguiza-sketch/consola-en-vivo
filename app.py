@@ -286,7 +286,7 @@ with st.container(border=True):
     dorsal_id = int(selec.split(" - ")[0])
 
     # Fila 1: Abandonos y Faltas
-    b1, b2, b3 = st.columns(3)
+    b1, b2, b3, b4, b5 = st.columns(5)
     with b1:
         # DNS: Solo para el Patio 1 (No vino al evento)
         if st.button("🚫 DNS", help="Did Not Start (No vino)", use_container_width=True):
@@ -302,7 +302,7 @@ with st.container(border=True):
             st.toast(registrar_suceso_inteligente(ID_EVENTO, dorsal_id, patio, evento['hora_cero'], "DNF (INC)"))
             st.rerun()
     # Fila 2: Acciones Especiales
-    b4, b5 = st.columns(2)
+    #b4, b5 = st.columns(2)
     with b4:
         if st.button("🚫 DQ", help="Disqualified", use_container_width=True):
             st.toast(registrar_suceso_inteligente(ID_EVENTO, dorsal_id, patio, evento['hora_cero'], "DNF (DQ)"))
