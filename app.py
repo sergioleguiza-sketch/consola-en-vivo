@@ -261,16 +261,22 @@ with st.container(border=True):
     with col_btn:
         if st.button("REGISTRAR ARRIBO", use_container_width=True, type="primary"):
             if dorsal_scan:
-                # 1. Llamamos a TU función tal cual la tenés definida
-                # Usamos el estado por defecto "ACT" (porque es un arribo normal)
-                resultado = registrar_suceso_inteligente(ID_EVENTO, int(dorsal_scan), patio)
+                # PASAMOS 4 ARGUMENTOS:
+                # 1. ID_EVENTO
+                # 2. El dorsal (convertido a entero)
+                # 3. El patio actual calculado por el sistema
+                # 4. La hora de inicio grabada en la DB (evento['hora_cero'])
+                resultado = registrar_suceso_inteligente(
+                    ID_EVENTO, 
+                    int(dorsal_scan), 
+                    patio, 
+                    evento['hora_cero']
+                )
                 
-                # 2. Lógica de feedback basada en el prefijo que devuelve tu función
-                if "✅" in resultado:
-                    st.toast(resultado) # Notificación rápida arriba a la derecha
-                    st.rerun()          # Refrescamos para que desaparezca de "En Pista"
+                if "✅" in resultado or "⚠️" in resultado:
+                    st.toast(resultado)
+                    st.rerun()
                 else:
-                    # Si hubo error (el ⚠️ que devuelve tu except), lo mostramos en rojo
                     st.error(resultado)
             else:
                 st.warning("⚠️ Escanée un dorsal primero")
