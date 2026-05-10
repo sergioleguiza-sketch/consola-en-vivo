@@ -98,7 +98,7 @@ def calcular_seguimiento_carrera(hora_cero_db):
     
     return patio_actual, tiempo_fmt, segundos_restantes, alerta
 
-def registrar_suceso_inteligente(id_evento, dorsal, patio_actual_sistema, hora_cero_db, estado_manual=None):
+def registrar_suceso_inteligente(id_evento, dorsal, patio_sistema, hora_cero_db, estado_manual=None):
     """
     Sustituye a registrar_suceso. Determina automáticamente si es ACT o OVR
     basado en el tiempo, a menos que se fuerce un estado (como RTC o DQ).
@@ -109,28 +109,37 @@ def registrar_suceso_inteligente(id_evento, dorsal, patio_actual_sistema, hora_c
     # Calculamos segundos totales desde la largada
     segundos_desde_inicio = (ahora - inicio_carrera).total_seconds()
     
-    # El segundo exacto dentro del bloque de 3600 segundos (1 hora)
-    segundo_del_patio = segundos_desde_inicio % 3600
+    # Patio que está transcurriendo según el reloj
+    patio_reloj = int(segundos_desde_inicio // 3600) + 1
+    segundo_del_bloque = segundos_desde_inicio % 3600
     
     # LÓGICA DE ESTADO AUTOMÁTICO
     if estado_manual:
         # Si venimos de un botón específico (RTC, DQ, WINNER), usamos ese
         estado = estado_manual
-        nro_vuelta = patio_actual_sistema
+        # Si es un abandono (RTC, INC, DQ), la vuelta completada es la ANTERIOR
+        # Ejemplo: Si se baja en el patio 5, completó 4.
+        nro_vuelta_registro = patio_sistema - 1
     else:
         # Si es un escaneo normal de llegada a meta:
         # Si llega en los primeros 30 segundos de la nueva hora, es OVR del patio anterior
-        if 0 < segundo_del_patio <= 300:
+        if 0 < segundo_del_bloque <= 300:
             estado = "DNF (OVR)"
-            nro_vuelta = patio_actual_sistema - 1
+            # Falló el patio anterior, por lo tanto completó el anterior al anterior
+            # Ejemplo: Reloj marca Patio 2, llega tarde -> Completó 0 vueltas.
+            nro_vuelta_registro = patio_reloj - 2
         else:
             estado = "ACT"
-            nro_vuelta = patio_actual_sistema
+            # Llegó a tiempo -> Su número de vuelta completada es el patio actual
+            nro_vuelta_registro = patio_reloj
 
+    # Un Backyard no tiene vueltas negativas (mínimo 0)
+    if nro_vuelta_registro < 0: nro_vuelta_registro = 0
+        
     nuevo_registro = {
         "id_evento": id_evento, 
         "dorsal": dorsal, 
-        "nro_vuelta": nro_vuelta, 
+        "nro_vuelta": nro_vuelta_registro, 
         "hora_llegada": ahora.isoformat(), 
         "estado": estado
     }
