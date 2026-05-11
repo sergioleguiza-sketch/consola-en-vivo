@@ -149,7 +149,8 @@ def registrar_suceso_inteligente(id_evento, dorsal, patio_sistema, hora_cero_db,
         emoji = "✅" if estado == "ACT" else "⚠️"
         return f"{emoji} Bib {dorsal}: {estado} en Patio {nro_vuelta}"
     except Exception as e:
-        return f"❌ Error: El dorsal {dorsal} ya tiene registro en el Patio {nro_vuelta}."
+        return f"❌ Error real: {str(e)}"
+        #return f"❌ Error: El dorsal {dorsal} ya tiene registro en el Patio {nro_vuelta}."
 
 def obtener_estado_monitor(id_evento, nro_vuelta):
     # 1. Traemos inscripciones: asistente está aquí, y anidamos atletas para el nombre
