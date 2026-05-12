@@ -98,6 +98,25 @@ def calcular_seguimiento_carrera(hora_cero_db):
     
     return patio_actual, tiempo_fmt, segundos_restantes, alerta
 
+def procesar_entrada_y_registrar(id_evento, entrada_raw, patio_actual, hora_cero):
+    # 1. ¿Es un dorsal manual (número corto)?
+    if entrada_raw.isdigit() and len(entrada_raw) <= 4:
+        dorsal_final = int(entrada_raw)
+    else:
+        # 2. Es un Chip o QR largo: lo buscamos en la base de datos
+        # Buscamos en la nueva columna 'id_chip' que agregamos
+        res = supabase.table("inscripciones").select("dorsal") \
+            .eq("id_evento", id_evento) \
+            .eq("id_chip", entrada_raw).execute()
+        
+        if res.data:
+            dorsal_final = res.data[0]['dorsal']
+        else:
+            return f"❌ El código '{entrada_raw}' no está asignado a ningún atleta."
+
+    # 3. Con el dorsal ya identificado, llamamos a tu lógica de Backyard
+    return registrar_suceso_inteligente(id_evento, dorsal_final, patio_actual, hora_cero)
+
 def registrar_suceso_inteligente(id_evento, dorsal, patio_sistema, hora_cero_db, estado_manual=None):
     """
     Sustituye a registrar_suceso. Determina automáticamente si es ACT o OVR
@@ -271,25 +290,23 @@ with st.container(border=True):
     with col_btn:
         if st.button("REGISTRAR ARRIBO", use_container_width=True, type="primary"):
             if dorsal_scan:
-                # PASAMOS 4 ARGUMENTOS:
-                # 1. ID_EVENTO
-                # 2. El dorsal (convertido a entero)
-                # 3. El patio actual calculado por el sistema
-                # 4. La hora de inicio grabada en la DB (evento['hora_cero'])
-                resultado = registrar_suceso_inteligente(
+                # IMPORTANTE: Ya no usamos int(dorsal_scan) aquí, 
+                # lo procesamos adentro de la función puente.
+                resultado = procesar_entrada_y_registrar(
                     ID_EVENTO, 
-                    int(dorsal_scan), 
+                    dorsal_scan, # Va el texto tal cual sale del escáner
                     patio, 
                     evento['hora_cero']
                 )
                 
                 if "✅" in resultado or "⚠️" in resultado:
                     st.toast(resultado)
+                    # Pequeño truco: podemos limpiar el input aquí si fuera necesario
                     st.rerun()
                 else:
                     st.error(resultado)
             else:
-                st.warning("⚠️ Escanée un dorsal primero")
+                st.warning("⚠️ Escanée un dorsal o chip primero")
 
 # --- BLOQUE 1: GESTIÓN DE SUCESOS (Tu código actual mejorado) ---
 with st.container(border=True):
