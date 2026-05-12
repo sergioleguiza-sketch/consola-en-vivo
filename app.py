@@ -123,11 +123,17 @@ def registrar_suceso_inteligente(id_evento, dorsal, patio_sistema, hora_cero_db,
     
     if estado_manual:
         estado = estado_manual
-        # Si abandona en el Patio 2, completó 1 vuelta
-        nro_vuelta_registro = patio_sistema - 1
         patio_final = patio_sistema
+        
+        # DISTINCIÓN PARA EL GANADOR:
+        if estado == "WINNER":
+            # El ganador completó el patio donde se encuentra
+            nro_vuelta_registro = patio_sistema
+        else:
+            # Para RTC, DQ, INC: el corredor NO completó el patio actual
+            nro_vuelta_registro = patio_sistema - 1
     else:
-        # Caso OVR (Llegada tarde en los primeros 5 min del patio siguiente)
+        # Caso OVR (Llegada tarde en los primeros 5 min del patio siguiente) [cite: 16]
         if 0 < segundo_del_bloque <= 300:
             estado = "DNF (OVR)"
             nro_vuelta_registro = patio_reloj - 2 
@@ -145,14 +151,15 @@ def registrar_suceso_inteligente(id_evento, dorsal, patio_sistema, hora_cero_db,
         "nro_vuelta": nro_vuelta_registro, 
         "hora_llegada": ahora.isoformat(), 
         "estado": estado,
-        "patio_suceso": patio_final # Clave para que no rebote en Supabase
+        "patio_suceso": patio_final 
     }
     
     try:
         supabase.table("vueltas_vivo").insert(nuevo_registro).execute()
         return f"✅ Bib {dorsal}: {estado} en Patio {nro_vuelta_registro}"
     except Exception as e:
-        return f"❌ Error: El dorsal {dorsal} ya tiene un registro en este patio."
+        # Este error ahora solo saltará si intentás registrar dos estados en el mismo patio físico 
+        return f"❌ Error: El dorsal {dorsal} ya tiene un suceso registrado en el Patio {patio_final}."
 
 def obtener_estado_monitor(id_evento, nro_vuelta):
     # 1. Traemos inscripciones: asistente está aquí, y anidamos atletas para el nombre
