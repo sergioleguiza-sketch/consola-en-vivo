@@ -118,41 +118,28 @@ def procesar_entrada_y_registrar(id_evento, entrada_raw, patio_actual, hora_cero
     return registrar_suceso_inteligente(id_evento, dorsal_final, patio_actual, hora_cero)
 
 def registrar_suceso_inteligente(id_evento, dorsal, patio_sistema, hora_cero_db, estado_manual=None):
-    """
-    Sustituye a registrar_suceso. Determina automáticamente si es ACT o OVR
-    basado en el tiempo, a menos que se fuerce un estado (como RTC o DQ).
-    """
     ahora = datetime.now(timezone.utc)
-    inicio_carrera = datetime.fromisoformat(hora_cero_db)
     
-    # Calculamos segundos totales desde la largada
-    segundos_desde_inicio = (ahora - inicio_carrera).total_seconds()
-    
-    # Patio que está transcurriendo según el reloj
-    patio_reloj = int(segundos_desde_inicio // 3600) + 1
-    segundo_del_bloque = segundos_desde_inicio % 3600
-    
-    # LÓGICA DE ESTADO AUTOMÁTICO
+    # LÓGICA SIMPLIFICADA:
     if estado_manual:
-        # Si venimos de un botón específico (RTC, DQ, WINNER), usamos ese
+        # Si es manual (RTC, DQ, INC, WINNER), registramos el patio actual
         estado = estado_manual
-        # Si es un abandono (RTC, INC, DQ), la vuelta completada es la ANTERIOR
-        # Ejemplo: Si se baja en el patio 5, completó 4.
-        nro_vuelta_registro = patio_sistema - 1
+        nro_vuelta_registro = patio_sistema 
     else:
-        # Si es un escaneo normal de llegada a meta:
-        # Si llega en los primeros 30 segundos de la nueva hora, es OVR del patio anterior
+        # Si es escaneo automático (ACT u OVR)
+        inicio_carrera = datetime.fromisoformat(hora_cero_db)
+        segundos_desde_inicio = (ahora - inicio_carrera).total_seconds()
+        patio_reloj = int(segundos_desde_inicio // 3600) + 1
+        segundo_del_bloque = segundos_desde_inicio % 3600
+        
+        # Si llega en los primeros 5 min del patio nuevo, es tarde pal anterior
         if 0 < segundo_del_bloque <= 300:
             estado = "DNF (OVR)"
-            # Falló el patio anterior, por lo tanto completó el anterior al anterior
-            # Ejemplo: Reloj marca Patio 2, llega tarde -> Completó 0 vueltas.
-            nro_vuelta_registro = patio_reloj - 2
+            nro_vuelta_registro = patio_reloj - 1 
         else:
             estado = "ACT"
-            # Llegó a tiempo -> Su número de vuelta completada es el patio actual
             nro_vuelta_registro = patio_reloj
 
-    # Un Backyard no tiene vueltas negativas (mínimo 0)
     if nro_vuelta_registro < 0: nro_vuelta_registro = 0
         
     nuevo_registro = {
@@ -165,11 +152,9 @@ def registrar_suceso_inteligente(id_evento, dorsal, patio_sistema, hora_cero_db,
     
     try:
         supabase.table("vueltas_vivo").insert(nuevo_registro).execute()
-        emoji = "✅" if estado == "ACT" else "⚠️"
-        return f"{emoji} Bib {dorsal}: {estado} en Patio {nro_vuelta_registro}"
+        return f"✅ Bib {dorsal}: {estado} en Patio {nro_vuelta_registro}"
     except Exception as e:
-        #return f"❌ Error real: {str(e)}"  con esto me muestra el error real
-        return f"❌ Error: El dorsal {dorsal} ya tiene registro en el Patio {nro_vuelta_registro}."
+        return f"❌ Error: El dorsal {dorsal} ya tiene un suceso en el Patio {nro_vuelta_registro}."
 
 def obtener_estado_monitor(id_evento, nro_vuelta):
     # 1. Traemos inscripciones: asistente está aquí, y anidamos atletas para el nombre
@@ -226,7 +211,30 @@ if eventos_lista:
 else:
     st.error("No hay eventos 'en_vivo' para controlar.")
     st.stop()
-    
+
+# --- SECCIÓN FUERA DEL BUCLE EN VIVO ---
+st.divider()
+with st.expander("📂 Consultar Eventos Finalizados y Descargar Resultados"):
+    res_fin = supabase.table("eventos").select("*").eq("estado", "finalizado").execute()
+    if res_fin.data:
+        ev_nom = [e['nombre'] for e in res_fin.data]
+        sel_fin = st.selectbox("Seleccioná evento para descargar:", ev_nom)
+        ev_obj = next(e for e in res_fin.data if e['nombre'] == sel_fin)
+        
+        if st.button("Generar Clasificación Final"):
+            df_final = obtener_clasificacion_final(ev_obj['id_evento'])
+            if df_final is not None:
+                st.dataframe(df_final, use_container_width=True)
+                csv = df_final.to_csv(index=False).encode('utf-8')
+                st.download_button(
+                    label="⬇️ Descargar CSV",
+                    data=csv,
+                    file_name=f"resultados_{ev_obj['nombre']}.csv",
+                    mime='text/csv'
+                )
+    else:
+        st.info("No hay eventos finalizados todavía.")
+
 # --- 1. CÁLCULO UNIFICADO ---
 # Llamamos a la función UNA SOLA VEZ para toda la página
 faltantes_lista, total_starters, en_pista_count = obtener_estado_monitor(ID_EVENTO, patio)
