@@ -194,28 +194,28 @@ else:
     st.error("No hay eventos 'en_vivo' para controlar.")
     st.stop()
 
-# --- SECCIÓN FUERA DEL BUCLE EN VIVO ---
-st.divider()
-with st.expander("📂 Consultar Eventos Finalizados y Descargar Resultados"):
-    res_fin = supabase.table("eventos").select("*").eq("estado", "finalizado").execute()
-    if res_fin.data:
-        ev_nom = [e['nombre'] for e in res_fin.data]
-        sel_fin = st.selectbox("Seleccioná evento para descargar:", ev_nom)
-        ev_obj = next(e for e in res_fin.data if e['nombre'] == sel_fin)
-        
-        if st.button("Generar Clasificación Final"):
-            df_final = obtener_clasificacion_final(ev_obj['id_evento'])
-            if df_final is not None:
-                st.dataframe(df_final, use_container_width=True)
-                csv = df_final.to_csv(index=False).encode('utf-8')
-                st.download_button(
-                    label="⬇️ Descargar CSV",
-                    data=csv,
-                    file_name=f"resultados_{ev_obj['nombre']}.csv",
-                    mime='text/csv'
-                )
-    else:
-        st.info("No hay eventos finalizados todavía.")
+    # --- SECCIÓN FUERA DEL BUCLE EN VIVO ---
+    st.divider()
+    with st.expander("📂 Consultar Eventos Finalizados y Descargar Resultados"):
+        res_fin = supabase.table("eventos").select("*").eq("estado", "finalizado").execute()
+        if res_fin.data:
+            ev_nom = [e['nombre'] for e in res_fin.data]
+            sel_fin = st.selectbox("Seleccioná evento para descargar:", ev_nom)
+            ev_obj = next(e for e in res_fin.data if e['nombre'] == sel_fin)
+            
+            if st.button("Generar Clasificación Final"):
+                df_final = obtener_clasificacion_final(ev_obj['id_evento'])
+                if df_final is not None:
+                    st.dataframe(df_final, use_container_width=True)
+                    csv = df_final.to_csv(index=False).encode('utf-8')
+                    st.download_button(
+                        label="⬇️ Descargar CSV",
+                        data=csv,
+                        file_name=f"resultados_{ev_obj['nombre']}.csv",
+                        mime='text/csv'
+                    )
+        else:
+            st.info("No hay eventos finalizados todavía.")
 
 # --- 1. CÁLCULO UNIFICADO ---
 # Llamamos a la función UNA SOLA VEZ para toda la página
