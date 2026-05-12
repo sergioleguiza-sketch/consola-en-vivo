@@ -93,6 +93,25 @@ def calcular_seguimiento_carrera(hora_cero_db):
     
     return patio_actual, tiempo_fmt, segundos_restantes, alerta
 
+def procesar_entrada_y_registrar(id_evento, entrada_raw, patio_actual, hora_cero):
+    # 1. ¿Es un dorsal manual (número corto)?
+    if entrada_raw.isdigit() and len(entrada_raw) <= 4:
+        dorsal_final = int(entrada_raw)
+    else:
+        # 2. Es un Chip o QR largo: lo buscamos en la base de datos
+        # Buscamos en la nueva columna 'id_chip' que agregamos
+        res = supabase.table("inscripciones").select("dorsal") \
+            .eq("id_evento", id_evento) \
+            .eq("id_chip", entrada_raw).execute()
+        
+        if res.data:
+            dorsal_final = res.data[0]['dorsal']
+        else:
+            return f"❌ El código '{entrada_raw}' no está asignado a ningún atleta."
+
+    # 3. Con el dorsal ya identificado, llamamos a tu lógica de Backyard
+    return registrar_suceso_inteligente(id_evento, dorsal_final, patio_actual, hora_cero)
+    
 def registrar_suceso_inteligente(id_evento, dorsal, patio_sistema, hora_cero_db, estado_manual=None):
     ahora = datetime.now(timezone.utc)
     inicio_carrera = datetime.fromisoformat(hora_cero_db)
