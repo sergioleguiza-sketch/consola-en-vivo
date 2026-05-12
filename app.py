@@ -215,7 +215,6 @@ if eventos_lista:
     
 else:
     st.error("No hay eventos 'en_vivo' para controlar.")
-    st.stop()
 
     # --- SECCIÓN FUERA DEL BUCLE EN VIVO ---
     st.divider()
