@@ -39,33 +39,55 @@ def finalizar_evento(id_evento):
         return False
 
 def obtener_clasificacion_final(id_evento):
-    res = supabase.table("vueltas_vivo").select("dorsal, nro_vuelta, estado, atletas(nombre, apellido)").eq("id_evento", id_evento).execute()
-    if not res.data: return None
+    # Usamos el nombre de la relación correcto según tu esquema
+    # Si la columna en vueltas_vivo es 'dorsal', pero la relación con atletas 
+    # es a través de inscripciones, necesitamos ir por el camino correcto.
     
-    df = pd.DataFrame(res.data)
-    df['atleta'] = df['atletas'].apply(lambda x: f"{x['nombre']} {x['apellido']}")
+    try:
+        # Intentamos la consulta simplificada primero
+        res = supabase.table("vueltas_vivo").select(
+            "dorsal, nro_vuelta, estado, hora_llegada"
+        ).eq("id_evento", id_evento).execute()
+        
+        if not res.data:
+            return None
 
-    # Agrupamos: el máximo de vueltas donde el estado fue ACT o WINNER
-    vueltas_ok = df[df['estado'].isin(['ACT', 'WINNER'])].groupby('dorsal')['nro_vuelta'].max().reset_index()
-    
-    # Obtenemos el último estado de cada uno (para saber quién es DNF o WINNER)
-    ultimo_estado = df.sort_values('nro_vuelta').groupby('dorsal').last().reset_index()[['dorsal', 'estado', 'atleta']]
-    
-    # Juntamos todo
-    clasif = pd.merge(ultimo_estado, vueltas_ok, on='dorsal', how='left').fillna(0)
-    return clasif.sort_values(by=['nro_vuelta'], ascending=False)
+        df = pd.DataFrame(res.data)
 
-    # 3. Lógica de ordenamiento Backyard:
-    # Primero el WINNER, luego por número de vueltas (descendente)
-    # A igual vueltas, el que llegó antes (hora_llegada ascendente)
-    clasif['es_winner'] = clasif['estado'] == 'WINNER'
-    
-    clasif = clasif.sort_values(
-        by=['es_winner', 'nro_vuelta', 'hora_llegada'], 
-        ascending=[False, False, True]
-    )
+        # 2. Para los nombres, traemos la lista de inscriptos y combinamos
+        ins = supabase.table("inscripciones").select(
+            "dorsal, atletas(nombre, apellido)"
+        ).eq("id_evento", id_evento).execute()
+        
+        df_nombres = pd.DataFrame([
+            {
+                "dorsal": i['dorsal'], 
+                "atleta": f"{i['atletas']['nombre']} {i['atletas']['apellido']}"
+            } for i in ins.data
+        ])
 
-    return clasif[['dorsal', 'atleta', 'nro_vuelta', 'estado']]
+        # Unimos las vueltas con los nombres
+        df = pd.merge(df, df_nombres, on="dorsal", how="left")
+        
+        # 3. Agrupamos para el ranking final
+        clasif = df.groupby('dorsal').agg({
+            'nro_vuelta': 'max',
+            'atleta': 'first',
+            'estado': 'last',
+            'hora_llegada': 'max'
+        }).reset_index()
+
+        # Ordenamiento Backyard: WINNER arriba, luego más vueltas, luego menor tiempo
+        clasif['es_winner'] = clasif['estado'] == 'WINNER'
+        clasif = clasif.sort_values(
+            by=['es_winner', 'nro_vuelta', 'hora_llegada'], 
+            ascending=[False, False, True]
+        )
+
+        return clasif[['dorsal', 'atleta', 'nro_vuelta', 'estado']]
+    except Exception as e:
+        st.error(f"Error técnico en la base de datos: {str(e)}")
+        return None
 
 # 2. Funciones de Lógica de Tiempo (Estricto Backyard)
 def calcular_seguimiento_carrera(hora_cero_db):
