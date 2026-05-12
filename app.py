@@ -158,37 +158,40 @@ def procesar_entrada_y_registrar(id_evento, entrada_raw, patio_actual, hora_cero
     
 def registrar_suceso_inteligente(id_evento, dorsal, patio_sistema, hora_cero_db, estado_manual=None):
     ahora = datetime.now(timezone.utc)
-    
-    # Calculamos el patio real según el reloj
     inicio_carrera = datetime.fromisoformat(hora_cero_db)
-    segundos_desde_inicio = (ahora - inicio_carrera).total_seconds()
-    patio_reloj = int(segundos_desde_inicio // 3600) + 1
-    segundo_del_bloque = segundos_desde_inicio % 3600
     
-    # Por defecto, la hora de registro es 'ahora'
+    # Referencia base: por defecto es el momento del clic
     hora_registro = ahora.isoformat()
     
     if estado_manual:
         estado = estado_manual
-        patio_final = patio_sistema
-        
-        if estado == "WINNER":
-            nro_vuelta_registro = patio_sistema
-        else:
-            # Para RTC, DQ, INC: el corredor NO completó el patio actual
-            nro_vuelta_registro = patio_sistema - 1
+        # 1. CASO DNS: El tiempo DEBE ser 0. Forzamos hora_llegada = hora_cero
+        if estado == "DNF (DNS)":
+            nro_vuelta_registro = 0
+            patio_final = 1
+            hora_registro = hora_cero_db # Esto garantiza el 00:00 en la vidriera
             
-            # Ajuste para el DNS
-            if estado == "DNS":
-                nro_vuelta_registro = 0
-                patio_final = 1
-                # Forzamos la hora de inicio para que el tiempo sea 00:00
-                hora_registro = hora_cero_db
+        # 2. CASO WINNER: Completó el patio actual
+        elif estado == "WINNER":
+            nro_vuelta_registro = patio_sistema
+            patio_final = patio_sistema
+            
+        # 3. OTROS DNF (RTC, INC, DQ):
+        else:
+            nro_vuelta_registro = patio_sistema - 1
+            patio_final = patio_sistema
+            # OPCIONAL: Si querés que los DNF no sumen tiempo basura, 
+            # podrías setear hora_registro también a la hora_cero o 
+            # al inicio del patio actual.
     else:
-        # Caso arribo normal o OVR
+        # Lógica automática para ACT y OVR (aquí el 'ahora' sí es correcto)
+        segundos_desde_inicio = (ahora - inicio_carrera).total_seconds()
+        patio_reloj = int(segundos_desde_inicio // 3600) + 1
+        segundo_del_bloque = segundos_desde_inicio % 3600
+        
         if 0 < segundo_del_bloque <= 300:
             estado = "DNF (OVR)"
-            nro_vuelta_registro = patio_reloj - 2 
+            nro_vuelta_registro = patio_reloj - 2
             patio_final = patio_reloj
         else:
             estado = "ACT"
