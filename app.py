@@ -39,54 +39,76 @@ def finalizar_evento(id_evento):
         return False
 
 def obtener_clasificacion_final(id_evento):
-    # Usamos el nombre de la relación correcto según tu esquema
-    # Si la columna en vueltas_vivo es 'dorsal', pero la relación con atletas 
-    # es a través de inscripciones, necesitamos ir por el camino correcto.
-    
     try:
-        # Intentamos la consulta simplificada primero
-        res = supabase.table("vueltas_vivo").select(
+        # 1. Traemos las vueltas y estados (la acción)
+        res_vueltas = supabase.table("vueltas_vivo").select(
             "dorsal, nro_vuelta, estado, hora_llegada"
         ).eq("id_evento", id_evento).execute()
         
-        if not res.data:
+        if not res_vueltas.data:
             return None
 
-        df = pd.DataFrame(res.data)
+        df_vueltas = pd.DataFrame(res_vueltas.data)
 
-        # 2. Para los nombres, traemos la lista de inscriptos y combinamos
-        ins = supabase.table("inscripciones").select(
-            "dorsal, atletas(nombre, apellido)"
+        # 2. Traemos TODO de inscripciones y atletas (los datos maestros)
+        # Según tu esquema, la relación es: vueltas_vivo -> inscripciones -> atletas
+        res_master = supabase.table("inscripciones").select(
+            "dorsal, atletas:dni_atleta(dni, nombre, apellido, fecha_nacimiento, genero, nacionalidad, localidad)"
         ).eq("id_evento", id_evento).execute()
         
-        df_nombres = pd.DataFrame([
-            {
-                "dorsal": i['dorsal'], 
-                "atleta": f"{i['atletas']['nombre']} {i['atletas']['apellido']}"
-            } for i in ins.data
-        ])
+        # Aplanamos la información del atleta para que sea una tabla simple
+        data_master = []
+        for i in res_master.data:
+            at = i['atletas']
+            data_master.append({
+                "dorsal": i['dorsal'],
+                "dni": at['dni'],
+                "nombre": at['nombre'],
+                "apellido": at['apellido'],
+                "fecha_de_nacimiento": at['fecha_nacimiento'],
+                "genero": at['genero'],
+                "nacionalidad": at['nacionalidad'],
+                "localidad": at['localidad']
+            })
+        df_master = pd.DataFrame(data_master)
 
-        # Unimos las vueltas con los nombres
-        df = pd.merge(df, df_nombres, on="dorsal", how="left")
+        # 3. Unimos la acción con los datos maestros
+        df = pd.merge(df_vueltas, df_master, on="dorsal", how="left")
         
-        # 3. Agrupamos para el ranking final
+        # 4. Agrupamos para obtener el resultado final por atleta
         clasif = df.groupby('dorsal').agg({
+            'dni': 'first',
             'nro_vuelta': 'max',
-            'atleta': 'first',
+            'nombre': 'first',
+            'apellido': 'first',
+            'fecha_de_nacimiento': 'first',
+            'genero': 'first',
+            'nacionalidad': 'first',
+            'localidad': 'first',
             'estado': 'last',
             'hora_llegada': 'max'
         }).reset_index()
 
-        # Ordenamiento Backyard: WINNER arriba, luego más vueltas, luego menor tiempo
+        # 5. Ordenamiento oficial Backyard (WINNER > Vueltas > Tiempo)
         clasif['es_winner'] = clasif['estado'] == 'WINNER'
         clasif = clasif.sort_values(
             by=['es_winner', 'nro_vuelta', 'hora_llegada'], 
             ascending=[False, False, True]
         )
 
-        return clasif[['dorsal', 'atleta', 'nro_vuelta', 'estado']]
+        # 6. REORDENAMIENTO FINAL SOLICITADO (El formato Bitácora)
+        # dni, vueltas, nombre, apellido, fecha de nacimiento, genero, nacionalidad y localidad
+        clasif = clasif.rename(columns={'nro_vuelta': 'vueltas'})
+        
+        columnas_bitacora = [
+            'dni', 'vueltas', 'nombre', 'apellido', 
+            'fecha_de_nacimiento', 'genero', 'nacionalidad', 'localidad'
+        ]
+        
+        return clasif[columnas_bitacora]
+
     except Exception as e:
-        st.error(f"Error técnico en la base de datos: {str(e)}")
+        st.error(f"Error al generar formato Bitácora: {str(e)}")
         return None
 
 # 2. Funciones de Lógica de Tiempo (Estricto Backyard)
