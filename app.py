@@ -380,7 +380,7 @@ with st.container(border=True):
     with b1:
         # DNS: Solo para el Patio 1 (No vino al evento)
         if st.button("🚫 DNS", help="Did Not Start (No vino)", use_container_width=True):
-            st.toast(registrar_suceso_inteligente(ID_EVENTO, dorsal_id, 1, evento['hora_cero'], "DNF (DNS)"))
+            st.toast(registrar_suceso_inteligente(ID_EVENTO, dorsal_id, 1, evento['hora_cero'], "DNS"))
             st.rerun()
     with b2:
         # RTC: El clásico "No salgo más" del Backyard
