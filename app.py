@@ -114,43 +114,45 @@ def procesar_entrada_y_registrar(id_evento, entrada_raw, patio_actual, hora_cero
     
 def registrar_suceso_inteligente(id_evento, dorsal, patio_sistema, hora_cero_db, estado_manual=None):
     ahora = datetime.now(timezone.utc)
+    
+    # Calculamos el patio real según el reloj
     inicio_carrera = datetime.fromisoformat(hora_cero_db)
     segundos_desde_inicio = (ahora - inicio_carrera).total_seconds()
-    
     patio_reloj = int(segundos_desde_inicio // 3600) + 1
     segundo_del_bloque = segundos_desde_inicio % 3600
-
+    
     if estado_manual:
         estado = estado_manual
-        # Si abandona en el Patio 3, sus vueltas completadas son 2
-        vueltas_finales = patio_sistema - 1
+        # Si abandona en el Patio 2, completó 1 vuelta
+        nro_vuelta_registro = patio_sistema - 1
+        patio_final = patio_sistema
     else:
-        # Caso OVR: Entra en los 5min del patio siguiente
+        # Caso OVR (Llegada tarde en los primeros 5 min del patio siguiente)
         if 0 < segundo_del_bloque <= 300:
             estado = "DNF (OVR)"
-            # Si el reloj marca Patio 2 y es OVR, completó 0 vueltas
-            vueltas_finales = patio_reloj - 2
+            nro_vuelta_registro = patio_reloj - 2 
+            patio_final = patio_reloj
         else:
             estado = "ACT"
-            # Si llega a tiempo en el Patio 2, completó 2 vueltas
-            vueltas_finales = patio_reloj
+            nro_vuelta_registro = patio_reloj
+            patio_final = patio_reloj
 
-    if vueltas_finales < 0: vueltas_finales = 0
+    if nro_vuelta_registro < 0: nro_vuelta_registro = 0
         
     nuevo_registro = {
         "id_evento": id_evento, 
         "dorsal": dorsal, 
-        "nro_vuelta": vueltas_finales, # ESTO es lo que verá la Bitácora
+        "nro_vuelta": nro_vuelta_registro, 
         "hora_llegada": ahora.isoformat(), 
         "estado": estado,
-        "patio_suceso": patio_reloj # Sugerencia: agregar esta columna en Supabase
+        "patio_suceso": patio_final # Clave para que no rebote en Supabase
     }
     
     try:
         supabase.table("vueltas_vivo").insert(nuevo_registro).execute()
         return f"✅ Bib {dorsal}: {estado} en Patio {nro_vuelta_registro}"
     except Exception as e:
-        return f"❌ Error: El dorsal {dorsal} ya tiene un suceso en el Patio {nro_vuelta_registro}."
+        return f"❌ Error: El dorsal {dorsal} ya tiene un registro en este patio."
 
 def obtener_estado_monitor(id_evento, nro_vuelta):
     # 1. Traemos inscripciones: asistente está aquí, y anidamos atletas para el nombre
