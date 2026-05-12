@@ -269,7 +269,7 @@ else:
             sel_fin = st.selectbox("Seleccioná evento para descargar:", ev_nom)
             ev_obj = next(e for e in res_fin.data if e['nombre'] == sel_fin)
             
-            if st.button("Generar Clasificación Final"):
+            if st.button("Generar Clasificación Final", type="primary", use_container_width=True):
                 df_final = obtener_clasificacion_final(ev_obj['id_evento'])
                 if df_final is not None:
                     st.dataframe(df_final, use_container_width=True)
