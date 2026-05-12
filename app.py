@@ -165,19 +165,27 @@ def registrar_suceso_inteligente(id_evento, dorsal, patio_sistema, hora_cero_db,
     patio_reloj = int(segundos_desde_inicio // 3600) + 1
     segundo_del_bloque = segundos_desde_inicio % 3600
     
+    # Por defecto, la hora de registro es 'ahora'
+    hora_registro = ahora.isoformat()
+    
     if estado_manual:
         estado = estado_manual
         patio_final = patio_sistema
         
-        # DISTINCIÓN PARA EL GANADOR:
         if estado == "WINNER":
-            # El ganador completó el patio donde se encuentra
             nro_vuelta_registro = patio_sistema
         else:
             # Para RTC, DQ, INC: el corredor NO completó el patio actual
             nro_vuelta_registro = patio_sistema - 1
+            
+            # Ajuste para el DNS
+            if estado == "DNS":
+                nro_vuelta_registro = 0
+                patio_final = 1
+                # Forzamos la hora de inicio para que el tiempo sea 00:00
+                hora_registro = hora_cero_db
     else:
-        # Caso OVR (Llegada tarde en los primeros 5 min del patio siguiente) [cite: 16]
+        # Caso arribo normal o OVR
         if 0 < segundo_del_bloque <= 300:
             estado = "DNF (OVR)"
             nro_vuelta_registro = patio_reloj - 2 
@@ -193,7 +201,7 @@ def registrar_suceso_inteligente(id_evento, dorsal, patio_sistema, hora_cero_db,
         "id_evento": id_evento, 
         "dorsal": dorsal, 
         "nro_vuelta": nro_vuelta_registro, 
-        "hora_llegada": ahora.isoformat(), 
+        "hora_llegada": hora_registro, # <--- USAMOS LA VARIABLE DINÁMICA
         "estado": estado,
         "patio_suceso": patio_final 
     }
@@ -202,7 +210,6 @@ def registrar_suceso_inteligente(id_evento, dorsal, patio_sistema, hora_cero_db,
         supabase.table("vueltas_vivo").insert(nuevo_registro).execute()
         return f"✅ Bib {dorsal}: {estado} en Patio {nro_vuelta_registro}"
     except Exception as e:
-        # Este error ahora solo saltará si intentás registrar dos estados en el mismo patio físico 
         return f"❌ Error: El dorsal {dorsal} ya tiene un suceso registrado en el Patio {patio_final}."
 
 def obtener_estado_monitor(id_evento, nro_vuelta):
