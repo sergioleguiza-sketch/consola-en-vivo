@@ -39,26 +39,21 @@ def finalizar_evento(id_evento):
         return False
 
 def obtener_clasificacion_final(id_evento):
-    # 1. Traemos todos los registros de vueltas de este evento
-    query = "dorsal, nro_vuelta, hora_llegada, estado, atletas:dni_atleta(nombre, apellido)"
-    res = supabase.table("vueltas_vivo").select(query).eq("id_evento", id_evento).execute()
+    res = supabase.table("vueltas_vivo").select("dorsal, nro_vuelta, estado, atletas(nombre, apellido)").eq("id_evento", id_evento).execute()
+    if not res.data: return None
     
-    if not res.data:
-        return None
-
     df = pd.DataFrame(res.data)
-    
-    # Expandimos los datos del atleta
     df['atleta'] = df['atletas'].apply(lambda x: f"{x['nombre']} {x['apellido']}")
+
+    # Agrupamos: el máximo de vueltas donde el estado fue ACT o WINNER
+    vueltas_ok = df[df['estado'].isin(['ACT', 'WINNER'])].groupby('dorsal')['nro_vuelta'].max().reset_index()
     
-    # 2. Agrupamos para obtener: Máximo de vueltas y Estado final
-    # (El estado final será WINNER o DNF)
-    clasif = df.groupby('dorsal').agg({
-        'nro_vuelta': 'max',
-        'atleta': 'first',
-        'estado': 'last', # El último estado registrado
-        'hora_llegada': 'max' # Referencia de tiempo
-    }).reset_index()
+    # Obtenemos el último estado de cada uno (para saber quién es DNF o WINNER)
+    ultimo_estado = df.sort_values('nro_vuelta').groupby('dorsal').last().reset_index()[['dorsal', 'estado', 'atleta']]
+    
+    # Juntamos todo
+    clasif = pd.merge(ultimo_estado, vueltas_ok, on='dorsal', how='left').fillna(0)
+    return clasif.sort_values(by=['nro_vuelta'], ascending=False)
 
     # 3. Lógica de ordenamiento Backyard:
     # Primero el WINNER, luego por número de vueltas (descendente)
