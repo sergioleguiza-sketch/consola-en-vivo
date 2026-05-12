@@ -239,6 +239,7 @@ else:
                     )
         else:
             st.info("No hay eventos finalizados todavía.")
+    st.stop()
 
 # --- 1. CÁLCULO UNIFICADO ---
 # Llamamos a la función UNA SOLA VEZ para toda la página
