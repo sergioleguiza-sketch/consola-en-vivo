@@ -166,7 +166,7 @@ def registrar_suceso_inteligente(id_evento, dorsal, patio_sistema, hora_cero_db,
     if estado_manual:
         estado = estado_manual
         # 1. CASO DNS: El tiempo DEBE ser 0. Forzamos hora_llegada = hora_cero
-        if estado == "DNF (DNS)":
+        if estado == "DNS":
             nro_vuelta_registro = 0
             patio_final = 1
             hora_registro = hora_cero_db # Esto garantiza el 00:00 en la vidriera
