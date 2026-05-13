@@ -113,9 +113,16 @@ def obtener_clasificacion_final(id_evento):
 
 # 2. Funciones de Lógica de Tiempo (Estricto Backyard)
 def calcular_seguimiento_carrera(hora_cero_db):
-    inicio_carrera = datetime.fromisoformat(hora_cero_db)
-    ahora = datetime.now(timezone.utc)
-    tiempo_transcurrido = ahora - inicio_carrera
+    # Traemos la hora de la DB (que está en UTC)
+    inicio_utc = datetime.fromisoformat(hora_cero_db)
+    
+    # Le restamos 3 horas para que coincida con Argentina (19h real)
+    inicio_argentina = inicio_utc - timedelta(hours=3) 
+    
+    ahora = datetime.now(timezone.utc) - timedelta(hours=3) # Trabajamos todo en local
+    
+    tiempo_transcurrido = ahora - inicio_argentina
+    
     segundos_totales = tiempo_transcurrido.total_seconds()
     
     if segundos_totales < 0:
