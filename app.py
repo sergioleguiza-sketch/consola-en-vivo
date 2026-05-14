@@ -141,7 +141,7 @@ def calcular_seguimiento_carrera(hora_cero_db):
     elif 60 < segundos_restantes <= 120: alerta = "🚨 ¡2 MINUTOS! (2° LLAMADO)"
     elif 0 < segundos_restantes <= 60: alerta = "⚠️ ¡1 MINUTO! (ÚLTIMO LLAMADO)"
     
-    return patio_actual, segundos_del_patio, tiempo_formateado, alerta
+    return patio_actual, segundos_del_patio, tiempo_formateado, alerta, segundos_restantes
 
 def procesar_entrada_y_registrar(id_evento, entrada_raw, patio_actual, hora_cero):
     # 1. ¿Es un dorsal manual (número corto)?
@@ -266,7 +266,8 @@ if eventos_lista:
     ID_EVENTO = evento['id_evento']
     
     # 4. Cálculo de tiempo (Patio, crono, alertas)
-    patio, crono, seg_restantes, alerta_msg = calcular_seguimiento_carrera(evento['hora_cero'])
+    patio, crono, tiempo_total, alerta_msg, seg_restantes_evento = calcular_seguimiento_carrera(evento['hora_cero'])
+    #patio, crono, seg_restantes, alerta_msg = calcular_seguimiento_carrera(evento['hora_cero'])
 
     # --- INTERFAZ DE CONSOLA ---
     st.title(f"⏱️ Panel de Control: {evento['nombre']}")
@@ -343,7 +344,7 @@ with c1:
 with c2:
     st.metric("Vuelta Actual", patio)
 with c3:
-    st_color = "inverse" if segundos_restantes <= 180 else "normal"
+    st_color = "inverse" if seg_restantes_evento <= 180 else "normal"
     st.metric("Tiempo para Campana", crono, delta_color=st_color)
 with c4:
     # Mantenemos tu lógica de "En Pista / Activos"
