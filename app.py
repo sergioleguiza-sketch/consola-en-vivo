@@ -337,6 +337,11 @@ if total_activos == 0: total_activos = total_starters
 ya_en_base = llegaron_ya.count if llegaron_ya.count is not None else 0
 en_pista_real = total_activos - ya_en_base
 
+def formatear_mm_ss(segundos):
+    minutos = segundos // 60
+    segs = segundos % 60
+    return f"{minutos:02d}:{segs:02d}"
+    
 # SECCIÓN A: MÉTRICAS PRINCIPALES
 c1, c2, c3, c4 = st.columns(4) # Cambiamos a 4 columnas
 with c1:
@@ -344,8 +349,14 @@ with c1:
 with c2:
     st.metric("Vuelta Actual", patio)
 with c3:
+    # 1. Calculamos el color con el valor numérico
     st_color = "inverse" if seg_restantes_evento <= 180 else "normal"
-    st.metric("Tiempo para Campana", crono, delta_color=st_color)
+    
+    # 2. Formateamos los segundos para la visualización
+    tiempo_campana_fmt = formatear_mm_ss(seg_restantes_evento)
+    
+    # 3. Mostramos la métrica con el nuevo formato
+    st.metric("Tiempo para Campana", tiempo_campana_fmt, delta_color=st_color)
 with c4:
     # Mantenemos tu lógica de "En Pista / Activos"
     st.metric("En Circuito / Activos", f"{en_pista_count} / {total_activos}")
