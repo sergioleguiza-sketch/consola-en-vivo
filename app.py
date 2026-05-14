@@ -122,7 +122,7 @@ def calcular_seguimiento_carrera(hora_cero_db):
     # 3. Cálculo de segundos totales transcurridos
     duracion = ahora - inicio_carrera
     segundos_totales = int(duracion.total_seconds())
-    inv
+    
     # Si la carrera no empezó, segundos_totales será negativo. Controlamos eso:
     if segundos_totales < 0:
         return 0, 0, "00:00:00"
