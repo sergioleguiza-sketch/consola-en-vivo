@@ -2,6 +2,7 @@ import streamlit as st
 import pandas as pd
 from datetime import datetime, timezone, timedelta
 from supabase import create_client
+import streamlit.components.v1 as components
 
 # Inyectamos el CSS para cambiar el color de los bordes de los contenedores
 st.markdown(
