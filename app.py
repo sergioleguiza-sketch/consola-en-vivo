@@ -122,7 +122,7 @@ def calcular_seguimiento_carrera(hora_cero_db):
     # 3. Cálculo de segundos totales transcurridos
     duracion = ahora - inicio_carrera
     segundos_totales = int(duracion.total_seconds())
-    
+    inv
     # Si la carrera no empezó, segundos_totales será negativo. Controlamos eso:
     if segundos_totales < 0:
         return 0, 0, "00:00:00"
@@ -343,7 +343,7 @@ with c1:
 with c2:
     st.metric("Vuelta Actual", patio)
 with c3:
-    st_color = "inverse" if seg_restantes <= 180 else "normal"
+    st_color = "inverse" if segundos_restantes <= 180 else "normal"
     st.metric("Tiempo para Campana", crono, delta_color=st_color)
 with c4:
     # Mantenemos tu lógica de "En Pista / Activos"
