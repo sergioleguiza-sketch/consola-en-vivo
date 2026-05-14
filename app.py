@@ -164,42 +164,40 @@ def procesar_entrada_y_registrar(id_evento, entrada_raw, patio_actual, hora_cero
     return registrar_suceso_inteligente(id_evento, dorsal_final, patio_actual, hora_cero)
     
 def registrar_suceso_inteligente(id_evento, dorsal, patio_sistema, hora_cero_db, estado_manual=None):
-    # 1. 'ahora' es la hora real del clic en UTC-3
+    # 1. Todo a local (Argentina)
     ahora = datetime.now(timezone.utc) - timedelta(hours=3)
-    
-    # 2. 'inicio_carrera' es lo que viene de Supabase (UTC) convertido a UTC-3
-    # Si en Supabase dice 22:00, esto lo convierte a 19:00
     inicio_carrera = datetime.fromisoformat(hora_cero_db.replace('Z', '+00:00')) - timedelta(hours=3)
-
+    
+    # 2. Calculamos los segundos reales transcurridos desde el inicio
+    segundos_desde_inicio = int((ahora - inicio_carrera).total_seconds())
+    
+    # Determinamos el patio del reloj (1 hora = 3600 seg)
+    patio_reloj = (segundos_desde_inicio // 3600) + 1
+    
     if estado_manual:
         estado = estado_manual
-        if estado == "DNS" or estado == "DNF (DNS)":
+        if estado in ["DNS", "DNF (DNS)"]:
+            segundos_netos = 0  # DNS siempre es 0
             nro_vuelta_registro = 0
             patio_final = 1
-            # PARA DNS: La hora de llegada es igual a la de largada -> Resultado 00:00
-            hora_registro = inicio_carrera.isoformat()
         else:
+            # Para RTC, INC, etc., calculamos cuánto tiempo pasó en ese patio
+            # Ej: si pasaron 3700 segundos en total, en el patio 2 lleva 100 segundos.
+            segundos_netos = segundos_desde_inicio % 3600 
             nro_vuelta_registro = patio_sistema - 1
             patio_final = patio_sistema
-            # PARA OTROS MANUALES: Usamos la hora del clic
-            hora_registro = ahora.isoformat()
     else:
-        # 3. LÓGICA AUTOMÁTICA (ACT y OVR)
-        # Aquí estaba el problema: usamos los dos objetos ya ajustados a UTC-3
-        segundos_desde_inicio = (ahora - inicio_carrera).total_seconds()
-        
-        patio_reloj = int(segundos_desde_inicio // 3600) + 1
+        # Lógica automática (ACT / OVR)
         segundo_del_bloque = segundos_desde_inicio % 3600
         
-        # Guardamos la hora del clic
-        hora_registro = ahora.isoformat()
-
         if 0 < segundo_del_bloque <= 300:
             estado = "DNF (OVR)"
+            segundos_netos = 3600 # Se pasó de tiempo, le clavamos la hora justa
             nro_vuelta_registro = patio_reloj - 2
             patio_final = patio_reloj
         else:
             estado = "ACT"
+            segundos_netos = segundo_del_bloque
             nro_vuelta_registro = patio_reloj
             patio_final = patio_reloj
 
