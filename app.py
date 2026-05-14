@@ -113,28 +113,25 @@ def obtener_clasificacion_final(id_evento):
 
 # 2. Funciones de Lógica de Tiempo (Estricto Backyard)
 def calcular_seguimiento_carrera(hora_cero_db):
-    # Traemos la hora de la DB (que está en UTC)
-    inicio_utc = datetime.fromisoformat(hora_cero_db)
+    # 1. Convertimos la hora de Supabase y le restamos 3 horas (Argentina)
+    inicio_carrera = datetime.fromisoformat(hora_cero_db.replace('Z', '+00:00')) - timedelta(hours=3)
     
-    # Le restamos 3 horas para que coincida con Argentina (19h real)
-    inicio_argentina = inicio_utc - timedelta(hours=3) 
+    # 2. El 'ahora' también en UTC-3
+    ahora = datetime.now(timezone.utc) - timedelta(hours=3)
     
-    ahora = datetime.now(timezone.utc) - timedelta(hours=3) # Trabajamos todo en local
+    # 3. Cálculo de segundos totales transcurridos
+    duracion = ahora - inicio_carrera
+    segundos_totales = int(duracion.total_seconds())
     
-    tiempo_transcurrido = ahora - inicio_argentina
-    
-    segundos_totales = tiempo_transcurrido.total_seconds()
-    
+    # Si la carrera no empezó, segundos_totales será negativo. Controlamos eso:
     if segundos_totales < 0:
-        return 0, "00:00", 0, "ESPERANDO LARGADA"
+        return 0, 0, "00:00:00"
+
+    # Patio actual y tiempo del bloque
+    patio_actual = (segundos_totales // 3600) + 1
+    segundos_del_patio = segundos_totales % 3600
     
-    patio_actual = int(segundos_totales // 3600) + 1
-    segundos_en_este_patio = segundos_totales % 3600
-    segundos_restantes = 3600 - segundos_en_este_patio
-    
-    minutos = int(segundos_restantes // 60)
-    segundos = int(segundos_restantes % 60)
-    tiempo_fmt = f"{minutos:02d}:{segundos:02d}"
+    tiempo_formateado = str(timedelta(seconds=segundos_totales))
     
     # Lógica de llamados de corral (3', 2', 1')
     alerta = "EN CURSO"
@@ -142,7 +139,7 @@ def calcular_seguimiento_carrera(hora_cero_db):
     elif 60 < segundos_restantes <= 120: alerta = "🚨 ¡2 MINUTOS! (2° LLAMADO)"
     elif 0 < segundos_restantes <= 60: alerta = "⚠️ ¡1 MINUTO! (ÚLTIMO LLAMADO)"
     
-    return patio_actual, tiempo_fmt, segundos_restantes, alerta
+    return patio_actual, segundos_del_patio, tiempo_formateado, alerta
 
 def procesar_entrada_y_registrar(id_evento, entrada_raw, patio_actual, hora_cero):
     # 1. ¿Es un dorsal manual (número corto)?
@@ -193,12 +190,14 @@ def registrar_suceso_inteligente(id_evento, dorsal, patio_sistema, hora_cero_db,
         if 0 < segundo_del_bloque <= 300:
             estado = "DNF (OVR)"
             segundos_netos = 3600 # Se pasó de tiempo, le clavamos la hora justa
-            nro_vuelta_registro = patio_reloj - 2
+            nro_vuelta_registro = (segundos_desde_inicio // 3600) - 1
+            #nro_vuelta_registro = patio_reloj - 2
             patio_final = patio_reloj
         else:
             estado = "ACT"
             segundos_netos = segundo_del_bloque
-            nro_vuelta_registro = patio_reloj
+            nro_vuelta_registro = (segundos_desde_inicio // 3600) + 1
+            #nro_vuelta_registro = patio_reloj
             patio_final = patio_reloj
 
     if nro_vuelta_registro < 0: nro_vuelta_registro = 0
@@ -207,8 +206,9 @@ def registrar_suceso_inteligente(id_evento, dorsal, patio_sistema, hora_cero_db,
         "id_evento": id_evento, 
         "dorsal": dorsal, 
         "nro_vuelta": nro_vuelta_registro, 
-        "hora_llegada": hora_registro, # <--- USAMOS LA VARIABLE DINÁMICA
+        "hora_llegada": ahora.isoformat(), #hora_registro <--- USAMOS LA VARIABLE DINÁMICA
         "estado": estado,
+        "segundos_netos": segundos_netos,
         "patio_suceso": patio_final 
     }
     
