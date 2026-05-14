@@ -31,6 +31,22 @@ url = st.secrets["SUPABASE_URL"]
 key = st.secrets["SUPABASE_KEY"]
 supabase = create_client(url, key)
 
+# 1. Definimos el componente de JavaScript
+def devolver_foco(key_input):
+    # Este script busca el input de Streamlit por su ID interno y le hace focus + select
+    components.html(
+        f"""
+        <script>
+            var input = window.parent.document.querySelector("input[aria-label='{key_input}']");
+            if (input) {{
+                input.focus();
+                input.select();
+            }}
+        </script>
+        """,
+        height=0,
+    )
+    
 def finalizar_evento(id_evento):
     try:
         # Cambiamos el estado en la tabla 'eventos'
@@ -370,28 +386,37 @@ with st.container(border=True):
     col_input, col_btn = st.columns([3, 1], vertical_alignment="bottom")
     
     with col_input:
-        dorsal_scan = st.text_input("Escanear Dorsal o Chip", key="scan_input", placeholder="Ej: 7")
+        dorsal_scan = st.text_input("Escanear Dorsal o Chip", key="input_dorsal", placeholder="Ej: 7")
         
     with col_btn:
         if st.button("REGISTRAR ARRIBO", use_container_width=True, type="primary"):
             if dorsal_scan:
-                # IMPORTANTE: Ya no usamos int(dorsal_scan) aquí, 
-                # lo procesamos adentro de la función puente.
                 resultado = procesar_entrada_y_registrar(
                     ID_EVENTO, 
-                    dorsal_scan, # Va el texto tal cual sale del escáner
+                    dorsal_scan, 
                     patio, 
                     evento['hora_cero']
                 )
                 
                 if "✅" in resultado or "⚠️" in resultado:
                     st.toast(resultado)
-                    # Pequeño truco: podemos limpiar el input aquí si fuera necesario
-                    st.rerun()
+                    # No limpies el input manualmente aquí si vas a usar st.rerun
+                    # El foco se debe ejecutar DESPUÉS del rerun para que sea efectivo
                 else:
                     st.error(resultado)
             else:
                 st.warning("⚠️ Escanée un dorsal o chip primero")
+            
+            # EL TRUCO DE EFICIENCIA:
+            # Llamamos al foco al final del bloque del botón.
+            # Si NO hubo rerun, se ejecuta ahora. 
+            # Si va a haber un rerun, necesitamos que se ejecute en el próximo ciclo.
+            devolver_foco("input_dorsal")
+    
+            # Si el resultado fue exitoso, refrescamos la interfaz
+            if dorsal_scan and ("✅" in resultado or "⚠️" in resultado):
+                st.rerun()
+                
 
 # --- BLOQUE 1: GESTIÓN DE SUCESOS (Tu código actual mejorado) ---
 with st.container(border=True):
