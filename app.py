@@ -132,7 +132,9 @@ def calcular_seguimiento_carrera(hora_cero_db):
     segundos_del_patio = segundos_totales % 3600
     
     tiempo_formateado = str(timedelta(seconds=segundos_totales))
-    
+
+    segundos_restantes = 3600 - segundos_del_patio
+
     # Lógica de llamados de corral (3', 2', 1')
     alerta = "EN CURSO"
     if 120 < segundos_restantes <= 180: alerta = "🚨 ¡3 MINUTOS! (1° LLAMADO)"
