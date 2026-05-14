@@ -164,39 +164,37 @@ def procesar_entrada_y_registrar(id_evento, entrada_raw, patio_actual, hora_cero
     return registrar_suceso_inteligente(id_evento, dorsal_final, patio_actual, hora_cero)
     
 def registrar_suceso_inteligente(id_evento, dorsal, patio_sistema, hora_cero_db, estado_manual=None):
-    # 1. Definimos el 'ahora' local (restando 3h a la UTC para que sea Argentina)
-    ahora = datetime.now(timezone.utc) - timedelta(hours=3) 
+    # 1. 'ahora' es la hora real del clic en UTC-3
+    ahora = datetime.now(timezone.utc) - timedelta(hours=3)
     
-    # 2. Corregimos la largada de la DB para que también sea local
-    inicio_carrera = datetime.fromisoformat(hora_cero_db) - timedelta(hours=3)
-    
-    # La referencia para grabar en la DB sigue siendo ISO, pero con el tiempo corregido
-    hora_registro = ahora.isoformat()
-    
+    # 2. 'inicio_carrera' es lo que viene de Supabase (UTC) convertido a UTC-3
+    # Si en Supabase dice 22:00, esto lo convierte a 19:00
+    inicio_carrera = datetime.fromisoformat(hora_cero_db.replace('Z', '+00:00')) - timedelta(hours=3)
+
     if estado_manual:
         estado = estado_manual
-        # CASO DNS: Forzamos que la llegada sea IGUAL al inicio real (19h)
         if estado == "DNS" or estado == "DNF (DNS)":
             nro_vuelta_registro = 0
             patio_final = 1
-            # Usamos la hora de inicio ya corregida a local
-            hora_registro = inicio_carrera.isoformat() 
-            
-        elif estado == "WINNER":
-            nro_vuelta_registro = patio_sistema
-            patio_final = patio_sistema
+            # PARA DNS: La hora de llegada es igual a la de largada -> Resultado 00:00
+            hora_registro = inicio_carrera.isoformat()
         else:
             nro_vuelta_registro = patio_sistema - 1
             patio_final = patio_sistema
-
+            # PARA OTROS MANUALES: Usamos la hora del clic
+            hora_registro = ahora.isoformat()
     else:
-        # Lógica automática para ACT y OVR
-        # Calculamos los segundos usando las dos variables ya corregidas a local
+        # 3. LÓGICA AUTOMÁTICA (ACT y OVR)
+        # Aquí estaba el problema: usamos los dos objetos ya ajustados a UTC-3
         segundos_desde_inicio = (ahora - inicio_carrera).total_seconds()
+        
         patio_reloj = int(segundos_desde_inicio // 3600) + 1
         segundo_del_bloque = segundos_desde_inicio % 3600
         
-        if 0 < segundo_del_bloque <= 300: # Margen de 5 min para el corral
+        # Guardamos la hora del clic
+        hora_registro = ahora.isoformat()
+
+        if 0 < segundo_del_bloque <= 300:
             estado = "DNF (OVR)"
             nro_vuelta_registro = patio_reloj - 2
             patio_final = patio_reloj
