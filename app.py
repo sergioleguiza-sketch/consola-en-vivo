@@ -164,39 +164,39 @@ def procesar_entrada_y_registrar(id_evento, entrada_raw, patio_actual, hora_cero
     return registrar_suceso_inteligente(id_evento, dorsal_final, patio_actual, hora_cero)
     
 def registrar_suceso_inteligente(id_evento, dorsal, patio_sistema, hora_cero_db, estado_manual=None):
-    ahora = datetime.now(timezone.utc)
-    inicio_carrera = datetime.fromisoformat(hora_cero_db)
+    # 1. Definimos el 'ahora' local (restando 3h a la UTC para que sea Argentina)
+    ahora = datetime.now(timezone.utc) - timedelta(hours=3) 
     
-    # Referencia base: por defecto es el momento del clic
+    # 2. Corregimos la largada de la DB para que también sea local
+    inicio_carrera = datetime.fromisoformat(hora_cero_db) - timedelta(hours=3)
+    
+    # La referencia para grabar en la DB sigue siendo ISO, pero con el tiempo corregido
     hora_registro = ahora.isoformat()
     
     if estado_manual:
         estado = estado_manual
-        # 1. CASO DNS: El tiempo DEBE ser 0. Forzamos hora_llegada = hora_cero
-        if estado == "DNS":
+        # CASO DNS: Forzamos que la llegada sea IGUAL al inicio real (19h)
+        if estado == "DNS" or estado == "DNF (DNS)":
             nro_vuelta_registro = 0
             patio_final = 1
-            hora_registro = hora_cero_db # Esto garantiza el 00:00 en la vidriera
+            # Usamos la hora de inicio ya corregida a local
+            hora_registro = inicio_carrera.isoformat() 
             
-        # 2. CASO WINNER: Completó el patio actual
         elif estado == "WINNER":
             nro_vuelta_registro = patio_sistema
             patio_final = patio_sistema
-            
-        # 3. OTROS DNF (RTC, INC, DQ):
         else:
             nro_vuelta_registro = patio_sistema - 1
             patio_final = patio_sistema
-            # OPCIONAL: Si querés que los DNF no sumen tiempo basura, 
-            # podrías setear hora_registro también a la hora_cero o 
-            # al inicio del patio actual.
+
     else:
-        # Lógica automática para ACT y OVR (aquí el 'ahora' sí es correcto)
+        # Lógica automática para ACT y OVR
+        # Calculamos los segundos usando las dos variables ya corregidas a local
         segundos_desde_inicio = (ahora - inicio_carrera).total_seconds()
         patio_reloj = int(segundos_desde_inicio // 3600) + 1
         segundo_del_bloque = segundos_desde_inicio % 3600
         
-        if 0 < segundo_del_bloque <= 300:
+        if 0 < segundo_del_bloque <= 300: # Margen de 5 min para el corral
             estado = "DNF (OVR)"
             nro_vuelta_registro = patio_reloj - 2
             patio_final = patio_reloj
